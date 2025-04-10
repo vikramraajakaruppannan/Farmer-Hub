@@ -75,9 +75,16 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-agritech-paleGreen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#116530' }}>
       <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
         <div className="p-8 md:p-12 w-full md:w-1/2">
+        <Link to="/" className="flex items-center text-sm text-agritech-green hover:underline mb-4">
+  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+  </svg>
+  Back
+</Link>
+
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Create Account</h2>
           <p className="text-gray-600 mb-6">Join our farming community today</p>
           {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>}
@@ -125,7 +132,7 @@ const Signup = () => {
           </form>
           <p className="mt-6 text-center text-sm text-gray-600">Already have an account? <Link to="/login" className="text-agritech-green font-medium hover:underline">Sign in</Link></p>
         </div>
-        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('/lovable-uploads/24600f67-3c2c-4eac-8ddc-cd77bc25260c.png')" }}>
+        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1597916829826-02e5bb4a54e0?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }}>
           <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/30 to-black/50">
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
               <div className="flex items-center mb-2">

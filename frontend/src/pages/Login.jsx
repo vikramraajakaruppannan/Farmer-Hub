@@ -59,9 +59,18 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen login-bg flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#116530' }}>
       <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
         <div className="p-8 md:p-12 w-full md:w-1/2">
+
+        <Link to="/" className="flex items-center text-sm text-agritech-green hover:underline mb-4">
+    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+    Back
+  </Link> 
+
+
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Welcome Back!</h2>
           <p className="text-gray-600 mb-8">Sign in to access your farming dashboard</p>
           {success && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">{success}</div>}
@@ -104,7 +113,7 @@ const Login = () => {
           </form>
           <p className="mt-6 text-center text-sm text-gray-600">Don't have an account? <Link to="/signup" className="text-agritech-green font-medium hover:underline">Sign up</Link></p>
         </div>
-        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1605000797499-95a51c5269ae?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80')" }}>
+        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://plus.unsplash.com/premium_photo-1661962692059-55d5a4319814?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8YWdyaWN1bHR1cmV8ZW58MHx8MHx8fDA%3D')" }}>
           <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/50 to-black/70">
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
               <div className="flex items-center mb-2">

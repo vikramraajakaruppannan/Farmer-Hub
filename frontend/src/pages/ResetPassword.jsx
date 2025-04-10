@@ -64,9 +64,15 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-agritech-paleGreen flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
+<div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#116530' }}>
+<div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
         <div className="p-8 md:p-12 w-full md:w-1/2">
+        <Link to="/VerificationCode" className="flex items-center text-sm text-agritech-green hover:underline mb-4">
+  <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+  </svg>
+  Back
+</Link>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Reset Password</h2>
           <p className="text-gray-600 mb-6">Create a new password for your farm account</p>
           
@@ -146,7 +152,7 @@ const ResetPassword = () => {
           </form>
         </div>
         
-        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('/lovable-uploads/9e65a4cf-0605-4a02-81c7-8d19826077a5.png')" }}>
+        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1571509107684-7e3034a90012?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODB8fGFncmljdWx0dXJlfGVufDB8fDB8fHww')" }}>
           <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/30 to-black/50">
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
               <div className="flex items-center mb-2">

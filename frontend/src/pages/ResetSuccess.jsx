@@ -7,8 +7,8 @@ const ResetSuccess = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-agritech-paleGreen flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
+<div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#116530' }}>
+<div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
         {/* Left side - Success message */}
         <div className="p-8 md:p-12 w-full md:w-1/2 flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full bg-agritech-paleGreen flex items-center justify-center mb-4">
@@ -56,7 +56,7 @@ const ResetSuccess = () => {
         </div>
         
         {/* Right side - Image and info */}
-        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('/lovable-uploads/55002fd8-613b-4c24-9da9-95683176bdd3.png')" }}>
+        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1688577207729-3b493e76b549?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTA0fHxhZ3JpY3VsdHVyZXxlbnwwfHwwfHx8MA%3D%3D')" }}>
           <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/30 to-black/50">
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
               <div className="flex items-center mb-2">
