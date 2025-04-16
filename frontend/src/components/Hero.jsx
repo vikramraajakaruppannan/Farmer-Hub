@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 
 const Hero = () => {
   return (
+    
     <div className="hero-section relative text-center py-20 md:py-32">
+      <img src="" alt="Hero Background" className="absolute inset-0 w-full h-full object-cover opacity-50" />
       <div className="absolute inset-0 bg-black opacity-40"></div>
       <div className="container mx-auto px-4 relative z-10">
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Request, UploadFile, File, Header
 from pydantic import BaseModel
 from supabase import create_client, Client
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +9,13 @@ import string
 import smtplib
 from email.mime.text import MIMEText
 import logging
+import uuid
+from fastapi.security import OAuth2PasswordBearer
+from typing import Dict, Optional, List
+from datetime import datetime, date
+from bs4 import BeautifulSoup
+import requests
+import module1  
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,14 +42,19 @@ SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_TIMEOUT = 15
 
+sessions: Dict[str, dict] = {}  # In-memory session store
 reset_codes = {}
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+
+# Pydantic Models
 class LoginRequest(BaseModel):
     email: str
     password: str
+    category: str
 
 class LoginResponse(BaseModel):
-    access_token: str
+    session_id: str
     first_name: str
     last_name: str
     email: str
@@ -52,6 +64,8 @@ class SignupRequest(BaseModel):
     password: str
     first_name: str
     last_name: str
+    mobile: str
+    category: str
 
 class SignupResponse(BaseModel):
     message: str
@@ -69,6 +83,31 @@ class ResetPasswordRequest(BaseModel):
     code: str
     new_password: str
 
+class LogoutRequest(BaseModel):
+    session_id: str
+
+class UserUpdate(BaseModel):
+    first_name: str
+    last_name: str
+    mobile: Optional[str] = None
+    address: Optional[str] = None
+    farm_size: Optional[str] = None
+    main_crops: Optional[str] = None
+    experience: Optional[str] = None
+
+class UserResponse(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    mobile: Optional[str] = None
+    category: str
+    address: Optional[str] = None
+    farm_size: Optional[str] = None
+    main_crops: Optional[str] = None
+    experience: Optional[str] = None
+    photo_url: Optional[str] = None
+
+# Utility Functions
 def send_reset_email(email: str, code: str) -> bool:
     if not SMTP_USER or not SMTP_PASSWORD:
         logger.warning("SMTP credentials not configured, falling back to console")
@@ -92,19 +131,20 @@ def send_reset_email(email: str, code: str) -> bool:
         print(f"Reset code for {email}: {code}")
         return False
 
+async def get_current_session(request: Request):
+    session_id = request.headers.get("X-Session-ID")
+    if not session_id or session_id not in sessions:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    return sessions[session_id]
+
+# Endpoints
 @app.post("/signup", response_model=SignupResponse)
 async def signup(signup_data: SignupRequest):
     try:
         logger.info(f"Attempting signup for {signup_data.email}")
         auth_response = supabase.auth.sign_up({
             "email": signup_data.email,
-            "password": signup_data.password,
-            "options": {
-                "data": {
-                    "first_name": signup_data.first_name,
-                    "last_name": signup_data.last_name
-                }
-            }
+            "password": signup_data.password
         })
 
         if auth_response.user is None:
@@ -115,7 +155,9 @@ async def signup(signup_data: SignupRequest):
             "id": auth_response.user.id,
             "email": signup_data.email,
             "first_name": signup_data.first_name,
-            "last_name": signup_data.last_name
+            "last_name": signup_data.last_name,
+            "mobile": signup_data.mobile,
+            "category": signup_data.category
         }
 
         profile_response = supabase.table("profiles").insert(user_data).execute()
@@ -150,17 +192,32 @@ async def login(login_data: LoginRequest):
             logger.error(f"Login failed for {login_data.email}: No user returned from Supabase")
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
-        profile_response = supabase.table("profiles").select("*").eq("id", auth_response.user.id).single().execute()
+        user_id = auth_response.user.id
+        profile_response = supabase.table("profiles").select("*").eq("id", user_id).single().execute()
 
         if not profile_response.data:
-            logger.error(f"Profile not found for user ID {auth_response.user.id}")
+            logger.error(f"Profile not found for user ID {user_id}")
             raise HTTPException(status_code=404, detail="User profile not found")
 
         profile = profile_response.data
-        logger.info(f"Login successful for {login_data.email}")
+
+        if profile["category"] != login_data.category:
+            if login_data.category == "Farmer":
+                logger.warning(f"Category mismatch for {login_data.email}: expected Farmer, found {profile['category']}")
+                raise HTTPException(status_code=403, detail="You are not a Farmer")
+            elif login_data.category == "Investor":
+                logger.warning(f"Category mismatch for {login_data.email}: expected Investor, found {profile['category']}")
+                raise HTTPException(status_code=403, detail="You are not an Investor")
+
+        session_id = str(uuid.uuid4())
+        sessions[session_id] = {
+            "user_id": user_id,
+            "email": login_data.email
+        }
+        logger.info(f"Login successful for {login_data.email}, session ID: {session_id}")
 
         return LoginResponse(
-            access_token=auth_response.session.access_token,
+            session_id=session_id,
             first_name=profile["first_name"],
             last_name=profile["last_name"],
             email=profile["email"]
@@ -171,6 +228,19 @@ async def login(login_data: LoginRequest):
         if "invalid" in error_message or "credentials" in error_message or "email not confirmed" in error_message:
             raise HTTPException(status_code=401, detail="Invalid email or password")
         raise HTTPException(status_code=500, detail=f"Login error: {error_message}")
+
+@app.post("/logout")
+async def logout(logout_data: LogoutRequest):
+    try:
+        session_id = logout_data.session_id
+        if session_id in sessions:
+            del sessions[session_id]
+            logger.info(f"Session {session_id} logged out successfully")
+            return {"message": "Logged out successfully"}
+        else:
+            raise HTTPException(status_code=400, detail="Invalid session ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Logout error: {str(e)}")
 
 @app.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
@@ -231,6 +301,11 @@ async def reset_password(request: ResetPasswordRequest):
             {"password": request.new_password}
         )
 
+        for session_id, session_data in list(sessions.items()):
+            if session_data["email"] == request.email:
+                del sessions[session_id]
+                logger.info(f"Invalidated session {session_id} for {request.email} after password reset")
+
         del reset_codes[request.email]
 
         return {"message": "Password reset successfully"}
@@ -242,9 +317,403 @@ async def reset_password(request: ResetPasswordRequest):
             raise HTTPException(status_code=403, detail="Admin access denied. Ensure SUPABASE_KEY is a service role key.")
         raise HTTPException(status_code=500, detail=f"Error: {error_message}")
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+@app.get("/dashboard", dependencies=[Depends(get_current_session)])
+async def get_dashboard(session: dict = Depends(get_current_session)):
+    profile = supabase.table("profiles").select("*").eq("id", session["user_id"]).single().execute()
+    if profile.data["category"] != "Farmer":
+        raise HTTPException(status_code=403, detail="Access denied: Farmers only")
+    return {"message": f"Welcome to the dashboard, {session['email']}"}
+
+@app.get("/invest", dependencies=[Depends(get_current_session)])
+async def get_invest(session: dict = Depends(get_current_session)):
+    profile = supabase.table("profiles").select("*").eq("id", session["user_id"]).single().execute()
+    if profile.data["category"] != "Investor":
+        raise HTTPException(status_code=403, detail="Access denied: Investors only")
+    return {"message": f"Welcome to the investment hub, {session['email']}"}
+
+@app.get("/user", response_model=UserResponse, dependencies=[Depends(get_current_session)])
+async def get_user(session: dict = Depends(get_current_session)):
+    try:
+        # Fetch profile
+        profile = supabase.table("profiles").select("*").eq("id", session["user_id"]).single().execute()
+        if not profile.data:
+            logger.error(f"Profile not found for user ID {session['user_id']}")
+            raise HTTPException(status_code=404, detail="User profile not found")
+
+        # Fetch farmer details
+        farmer_details = supabase.table("farmer_details").select("*").eq("user_id", session["user_id"]).execute()
+        farmer_data = farmer_details.data[0] if farmer_details.data else {
+            "address": "",
+            "farm_size": "",
+            "main_crops": "",
+            "experience": "",
+            "photo_url": ""
+        }
+
+        logger.info(f"Fetched user data for {session['email']}: profile={profile.data}, farmer_details={farmer_data}")
+
+        profile_data = profile.data
+        return UserResponse(
+            first_name=profile_data["first_name"],
+            last_name=profile_data["last_name"],
+            email=profile_data["email"],
+            mobile=profile_data.get("mobile", ""),
+            category=profile_data["category"],
+            address=farmer_data["address"],
+            farm_size=farmer_data["farm_size"],
+            main_crops=farmer_data["main_crops"],
+            experience=farmer_data["experience"],
+            photo_url=farmer_data["photo_url"] or None
+        )
+    except Exception as e:
+        logger.error(f"Error fetching user profile for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching profile: {str(e)}")
+
+@app.put("/user", response_model=UserResponse, dependencies=[Depends(get_current_session)])
+async def update_user(update_data: UserUpdate, session: dict = Depends(get_current_session)):
+    try:
+        # Validate mobile if provided
+        if update_data.mobile:
+            mobile_check = supabase.table("profiles").select("id").eq("mobile", update_data.mobile).neq("id", session["user_id"]).execute()
+            if mobile_check.data:
+                logger.warning(f"Mobile {update_data.mobile} already in use by another user")
+                raise HTTPException(status_code=400, detail="Mobile number already in use")
+
+        # Update profile data (email is not updated)
+        profile_update = {
+            "first_name": update_data.first_name,
+            "last_name": update_data.last_name,
+            "mobile": update_data.mobile
+        }
+        profile_response = supabase.table("profiles").update(profile_update).eq("id", session["user_id"]).execute()
+        if not profile_response.data:
+            logger.error(f"Failed to update profile for user ID {session['user_id']}")
+            raise HTTPException(status_code=500, detail="Failed to update profile")
+
+        # Update or insert farmer details
+        farmer_details = supabase.table("farmer_details").select("*").eq("user_id", session["user_id"]).execute()
+        farmer_update = {
+            "user_id": session["user_id"],
+            "address": update_data.address or "",
+            "farm_size": update_data.farm_size or "",
+            "main_crops": update_data.main_crops or "",
+            "experience": update_data.experience or "",
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        if farmer_details.data:
+            # Preserve existing photo_url
+            farmer_update["photo_url"] = farmer_details.data[0]["photo_url"] or ""
+            supabase.table("farmer_details").update(farmer_update).eq("user_id", session["user_id"]).execute()
+        else:
+            farmer_update["photo_url"] = ""
+            supabase.table("farmer_details").insert(farmer_update).execute()
+
+        logger.info(f"Profile updated successfully for {session['email']}, farmer_details={farmer_update}")
+        return UserResponse(
+            first_name=update_data.first_name,
+            last_name=update_data.last_name,
+            email=session["email"],
+            mobile=update_data.mobile or "",
+            category=profile_response.data[0]["category"],
+            address=update_data.address or "",
+            farm_size=update_data.farm_size or "",
+            main_crops=update_data.main_crops or "",
+            experience=update_data.experience or "",
+            photo_url=farmer_update["photo_url"] or None
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error updating user profile for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating profile: {str(e)}")
+
+@app.post("/user/photo", dependencies=[Depends(get_current_session)])
+async def upload_profile_photo(file: UploadFile = File(...), session: dict = Depends(get_current_session)):
+    try:
+        # Validate file
+        if not file.content_type.startswith("image/"):
+            logger.error(f"Invalid file type for {session['email']}: {file.content_type}")
+            raise HTTPException(status_code=400, detail="Only image files are allowed")
+        
+        # Generate file path
+        file_extension = file.filename.split(".")[-1].lower()
+        if file_extension not in ['jpg', 'jpeg', 'png', 'gif']:
+            logger.error(f"Unsupported file extension for {session['email']}: {file_extension}")
+            raise HTTPException(status_code=400, detail="Unsupported image format")
+        
+        file_path = f"{session['user_id']}/{uuid.uuid4()}.{file_extension}"
+        logger.info(f"Generated file path for {session['email']}: {file_path}")
+
+        # Upload to Supabase Storage
+        file_content = await file.read()
+        storage_response = supabase.storage.from_("profile-photos").upload(
+            file_path,
+            file_content,
+            {"content-type": file.content_type}
+        )
+
+        if not storage_response:
+            logger.error(f"Failed to upload photo for {session['email']} to path: {file_path}")
+            raise HTTPException(status_code=500, detail="Failed to upload photo")
+
+        # Get public URL
+        public_url = supabase.storage.from_("profile-photos").get_public_url(file_path)
+        logger.info(f"Generated public URL for {session['email']}: {public_url}")
+
+        # Verify file exists
+        try:
+            file_list = supabase.storage.from_("profile-photos").list(f"{session['user_id']}")
+            file_exists = any(f['name'] == file_path.split('/')[-1] for f in file_list)
+            if not file_exists:
+                logger.error(f"Uploaded file not found in storage for {session['email']}: {file_path}")
+                raise HTTPException(status_code=500, detail="File upload verification failed")
+        except Exception as e:
+            logger.error(f"Error verifying file existence for {session['email']}: {str(e)}")
+
+        # Update or insert farmer_details with photo_url
+        farmer_details = supabase.table("farmer_details").select("*").eq("user_id", session["user_id"]).execute()
+        if farmer_details.data:
+            supabase.table("farmer_details").update({
+                "photo_url": public_url,
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("user_id", session["user_id"]).execute()
+            logger.info(f"Updated farmer_details for {session['email']} with photo_url: {public_url}")
+        else:
+            supabase.table("farmer_details").insert({
+                "user_id": session["user_id"],
+                "address": "",
+                "farm_size": "",
+                "main_crops": "",
+                "experience": "",
+                "photo_url": public_url,
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }).execute()
+            logger.info(f"Inserted farmer_details for {session['email']} with photo_url: {public_url}")
+
+        logger.info(f"Profile photo uploaded successfully for {session['email']}, stored URL: {public_url}")
+        return {"photo_url": public_url}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error uploading photo for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error uploading photo: {str(e)}")
+
+# Dependency for session validation
+async def get_current_session(x_session_id: Optional[str] = Header(None)):
+    if not x_session_id or x_session_id not in sessions:
+        raise HTTPException(status_code=401, detail="Invalid or missing session ID")
+    return sessions[x_session_id]
+
+# Sample tips list
+DAILY_TIPS = [
+    "Check soil moisture levels daily for optimal crop health and water conservation.",
+    "Rotate crops seasonally to prevent soil depletion and reduce pest buildup.",
+    "Use companion planting to naturally deter pests and boost crop yields.",
+    "Apply mulch to retain soil moisture and suppress weeds effectively.",
+    "Monitor weather forecasts to plan irrigation and protect crops from storms.",
+    "Test soil pH regularly to ensure optimal nutrient availability for plants.",
+    "Prune fruit trees in late winter to encourage healthy spring growth.",
+    "Use organic compost to enrich soil and promote sustainable farming.",
+    "Inspect crops weekly for early signs of disease or pest infestation.",
+    "Harvest rainwater to reduce dependency on external water sources."
+]
+
+@app.get("/daily-tip")
+async def get_daily_tip(session: dict = Depends(get_current_session)):
+    try:
+        # Select tip based on day of the year
+        day_of_year = datetime.now().timetuple().tm_yday
+        tip_index = day_of_year % len(DAILY_TIPS)
+        tip = DAILY_TIPS[tip_index]
+        
+        logger.info(f"Serving daily tip: {tip}")
+        return {"tip": tip}
+    except Exception as e:
+        logger.error(f"Daily tip error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching daily tip: {str(e)}")
+
+events_cache: Dict[str, List[dict]] = {"date": "", "events": []}
+
+# Scrape events from Eventbrite
+async def scrape_events():
+    url = "https://www.eventbrite.com/d/online/agriculture--events/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        events = []
+        # Try multiple selectors to find event cards
+        event_items = (
+            soup.select("div.search-event-card-wrapper") or
+            soup.select("div.eds-event-card") or
+            soup.select("section.eds-event-card--content")
+        )
+        logger.info(f"Found {len(event_items)} event items")
+
+        for item in event_items[:3]:  # Limit to 3
+            name_elem = (
+                item.select_one("h2.eds-event-card__title") or
+                item.select_one("h3.eds-event-card-content__title") or
+                item.select_one("div.event-card-details h3")
+            )
+            date_elem = (
+                item.select_one("p.eds-text-color--ui-600") or
+                item.select_one("div.eds-text-color--ui-600") or
+                item.select_one("div.event-card__date")
+            )
+            location_elem = (
+                item.select_one("p.eds-event-card__sub-title") or
+                item.select_one("div.eds-event-card__sub-content") or
+                item.select_one("div.event-card__location")
+            )
+
+            name = name_elem.get_text(strip=True) if name_elem else "Unknown Event"
+            date_text = date_elem.get_text(strip=True) if date_elem else "TBA"
+            location = location_elem.get_text(strip=True) if location_elem else "Online"
+
+            logger.debug(f"Parsed event: {name}, {date_text}, {location}")
+            events.append({
+                "name": name,
+                "date": date_text,
+                "location": location
+            })
+
+        if not events:
+            logger.warning("No events parsed from Eventbrite")
+        
+        # Update cache
+        events_cache["date"] = date.today().isoformat()
+        events_cache["events"] = events
+        logger.info(f"Scraped {len(events)} events from Eventbrite")
+        return events
+    except Exception as e:
+        logger.error(f"Scraping error: {str(e)}")
+        return events_cache["events"]  # Fallback to cache
+    
+@app.get("/events")
+async def get_events(session: dict = Depends(get_current_session)):
+    try:
+        current_date = date.today().isoformat()
+        # Check cache
+        if events_cache["date"] == current_date and events_cache["events"]:
+            logger.info("Serving cached events")
+            return {"events": events_cache["events"]}
+        
+        # Scrape fresh events
+        events = await scrape_events()
+        if not events:
+            logger.warning("No events found, returning fallback")
+            return {"events": [
+                {"name": "Sustainable Agriculture Summit", "date": "TBA", "location": "Online"},
+                {"name": "Organic Farming Workshop", "date": "TBA", "location": "Online"}
+            ]}
+        
+        return {"events": events}
+    except Exception as e:
+        logger.error(f"Events error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching events: {str(e)}")
+    
+    
+    
+# New Disease Detection Endpoints
+@app.post("/detect-disease")
+async def detect_disease(images: List[UploadFile] = File(...), session: dict = Depends(get_current_session)):
+    """Detect diseases in uploaded images"""
+    try:
+        if len(images) > 5:
+            raise HTTPException(status_code=400, detail="Maximum 5 images allowed")
+
+        results = []
+        errors = []
+
+        for image in images:
+            if not image.content_type.startswith("image/"):
+                errors.append(f"Invalid file: {image.filename}")
+                continue
+
+            try:
+                content = await image.read()
+                plant_result = await module1.detect_plant_disease(content)
+                assessment = plant_result.get("health_assessment", {})
+                plant_name = assessment.get("plant", {}).get("name", None)
+
+                is_healthy = assessment.get("is_healthy", False)
+                healthy_prob = is_healthy.get("probability", 0) if isinstance(is_healthy, dict) else (1.0 if is_healthy else 0.0)
+
+                diseases = []
+                for disease in assessment.get("diseases", [])[:2]:
+                    if disease["probability"] < 0.5:
+                        continue
+                    prevention = await module1.get_prevention_methods(disease["name"], plant_name or "plant")
+                    diseases.append({
+                        "name": disease["name"],
+                        "probability": disease["probability"],
+                        "prevention": prevention
+                    })
+
+                results.append({
+                    "plant_name": plant_name,
+                    "healthy": healthy_prob > 0.5,
+                    "healthy_probability": healthy_prob,
+                    "diseases": diseases
+                })
+            except Exception as e:
+                errors.append(f"Failed to analyze {image.filename}: {str(e)}")
+
+        if results:
+            supabase.table("disease_scans").insert({
+                "user_id": session["user_id"],
+                "results": results,
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+
+        if not results and errors:
+            raise HTTPException(status_code=400, detail={"message": "No valid results", "errors": errors})
+
+        logger.info(f"Disease detection for {session['email']}: {len(results)} results, {len(errors)} errors")
+        return {"results": results, "errors": errors}
+    except Exception as e:
+        logger.error(f"Disease detection error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/update-plant-name")
+async def update_plant_name(data: dict, session: dict = Depends(get_current_session)):
+    """Update prevention methods with user-provided plant name"""
+    try:
+        plant_name = data.get("plant_name")
+        disease_name = data.get("disease_name")
+        if not plant_name or not disease_name:
+            raise HTTPException(status_code=400, detail="Plant name and disease name required")
+
+        prevention = await module1.get_prevention_methods(disease_name, plant_name)
+        return {"prevention": prevention}
+    except Exception as e:
+        logger.error(f"Update plant name error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/feedback")
+async def submit_feedback(
+    feedback: dict,
+    session: dict = Depends(get_current_session)
+):
+    """Store user feedback in Supabase"""
+    try:
+        supabase.table("feedback").insert({
+            "user_id": session["user_id"],
+            "rating": feedback.get("rating", 0),
+            "comment": feedback.get("comment", ""),
+            "created_at": datetime.utcnow().isoformat()
+        }).execute()
+        logger.info(f"Feedback submitted for user {session['email']}")
+        return {"message": "Feedback submitted successfully"}
+    except Exception as e:
+        logger.error(f"Feedback error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error submitting feedback: {str(e)}")    
 
 if __name__ == "__main__":
     import uvicorn

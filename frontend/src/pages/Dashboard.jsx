@@ -1,20 +1,44 @@
-
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { Scan, Users, BookOpen, Truck, Phone, Users2, BanknoteIcon } from 'lucide-react';
+import { Scan, Users, BookOpen, Truck, BanknoteIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const navigate = useNavigate();
   
   useEffect(() => {
-    // Get user from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const sessionId = localStorage.getItem('session_id');
+    if (storedUser && sessionId) {
       setUser(JSON.parse(storedUser));
+      fetchDashboardData(sessionId);
+    } else {
+      navigate('/login', { replace: true });
     }
-  }, []);
+  }, [navigate]);
+
+  const fetchDashboardData = async (sessionId) => {
+    try {
+      const response = await fetch('http://localhost:8000/dashboard', {
+        headers: { 'X-Session-ID': sessionId },
+      });
+      if (response.status === 401) {
+        localStorage.removeItem('session_id');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
+        navigate('/login', { replace: true });
+      } else if (!response.ok) {
+        throw new Error('Failed to load dashboard');
+      }
+      const data = await response.json();
+      setDashboardData(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -31,9 +55,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Main Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* AI Crop Disease Scanner */}
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -56,7 +78,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Farmer-to-Farmer Exchange */}
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -70,7 +91,7 @@ const Dashboard = () => {
                   Trade seeds, fertilizers, and tools with fellow farmers.
                 </p>
                 <Link 
-                  to="/farmer-exchange"
+                  to="/market"
                   className="mt-auto w-full py-2 bg-blue-600 text-white text-center rounded-md hover:bg-blue-700 transition-colors"
                 >
                   Start Trading
@@ -79,7 +100,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Expert Consultation */}
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -93,7 +113,7 @@ const Dashboard = () => {
                   Get expert guidance on farming techniques & crop health.
                 </p>
                 <Link 
-                  to="/expert-consultation"
+                  to="/expert-connect"
                   className="mt-auto w-full py-2 bg-purple-600 text-white text-center rounded-md hover:bg-purple-700 transition-colors"
                 >
                   Ask an Expert
@@ -103,9 +123,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Secondary Features */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Urban-to-Farmer Investment */}
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -119,7 +137,7 @@ const Dashboard = () => {
                   Receive direct investment from urban funders & share profits.
                 </p>
                 <Link 
-                  to="/investment"
+                  to="/investments"
                   className="mt-auto w-full py-2 bg-green-600 text-white text-center rounded-md hover:bg-green-700 transition-colors"
                 >
                   Invest Now
@@ -128,7 +146,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Smart Agricultural Supply Chain */}
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -152,9 +169,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Stats and Testimonials */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Live Stats */}
           <Card className="overflow-hidden shadow-md">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Live Stats & Impact</h3>
@@ -175,7 +190,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Testimonials */}
           <Card className="overflow-hidden shadow-md">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Testimonials</h3>
@@ -193,7 +207,6 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Newsletter Section */}
         <div className="mt-8">
           <Card className="overflow-hidden shadow-md">
             <CardContent className="p-6">

@@ -1,10 +1,33 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Check, Clock, Shield, Zap } from 'lucide-react';
 
 const ResetSuccess = () => {
   const navigate = useNavigate();
+  const [secondsLeft, setSecondsLeft] = useState(30); // Start at 30 seconds
+
+  useEffect(() => {
+    // Redirect after 30 seconds
+    const redirectTimer = setTimeout(() => {
+      navigate('/login');
+    }, 30000); // 30 seconds in milliseconds
+
+    // Update countdown every second
+    const countdownTimer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownTimer); // Stop countdown when it reaches 0
+        }
+        return prev - 1;
+      });
+    }, 1000); // Update every 1 second
+
+    // Cleanup timers on component unmount
+    return () => {
+      clearTimeout(redirectTimer);
+      clearInterval(countdownTimer);
+    };
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-agritech-paleGreen flex items-center justify-center p-4">
@@ -51,7 +74,7 @@ const ResetSuccess = () => {
           </button>
           
           <p className="text-xs text-gray-500 mt-4 flex items-center justify-center">
-            <Clock className="h-3 w-3 mr-1" /> Redirecting in 60 seconds
+            <Clock className="h-3 w-3 mr-1" /> Redirecting in {secondsLeft} seconds
           </p>
         </div>
         
