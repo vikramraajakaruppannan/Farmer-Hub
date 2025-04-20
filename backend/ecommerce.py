@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 import uuid
-from .utils import supabase, get_session, logger
+from utils import supabase, get_session, logger
 
 app = FastAPI()
 

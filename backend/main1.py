@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .auth import app as auth_app
-from .disease_detection import app as disease_detection_app
-from .ecommerce import app as ecommerce_app
-from .utils import supabase, logger
+from auth import app as auth_app
+from disease_detection import app as disease_detection_app
+from ecommerce import app as ecommerce_app
+from utils import supabase, logger
 
 app = FastAPI()
 

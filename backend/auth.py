@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Optional, Dict
 from datetime import datetime
-from .utils import supabase, sessions, send_reset_email, reset_codes, get_current_session, get_session, logger, SMTP_USER, SMTP_PASSWORD
+from utils import supabase, sessions, send_reset_email, reset_codes, get_current_session, get_session, logger, SMTP_USER, SMTP_PASSWORD
 
 app = FastAPI()
 

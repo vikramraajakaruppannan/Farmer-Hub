@@ -5,7 +5,7 @@ from datetime import datetime, date
 from bs4 import BeautifulSoup
 import requests
 import module1
-from .utils import supabase, get_current_session, logger
+from utils import supabase, get_current_session, logger
 
 app = FastAPI()
 
