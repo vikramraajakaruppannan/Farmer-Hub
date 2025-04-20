@@ -1,6 +1,5 @@
 // pages/Invest.jsx
 import React from 'react';
-import Sidebar from '../components/Sidebar';
 
 const Invest = () => (
   <div className="flex min-h-screen bg-gray-50">

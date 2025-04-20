@@ -5,31 +5,43 @@ import { Package, Truck, ShoppingBag, ArrowLeft, CheckCircle, XCircle } from 'lu
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@radix-ui/react-tooltip';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 
 // Progress Tracker Component
-const ProgressTracker = ({ status }) => {
-  const statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-  const currentIndex = statuses.indexOf(status.toLowerCase());
+const ProgressTracker = ({ status, deliveryMethod }) => {
+  const statuses = deliveryMethod === 'self_pickup'
+    ? ['Pending', 'Ready for Pickup', 'Delivered']
+    : ['Pending', 'Packed', 'Shipped', 'Delivered'];
+  const currentIndex = statuses.indexOf(status);
+  const isCancelled = status === 'Cancelled';
 
   return (
     <div className="flex items-center justify-between w-full mt-4">
-      {statuses.slice(0, 4).map((step, index) => (
+      {statuses.map((step, index) => (
         <div key={step} className="flex-1 text-center">
           <div className="relative">
             <div
               className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${
-                status.toLowerCase() === 'cancelled'
+                isCancelled
                   ? 'bg-red-500 text-white'
                   : index <= currentIndex
                   ? 'bg-agritech-green text-white'
                   : 'bg-gray-200 text-gray-500'
               }`}
             >
-              {status.toLowerCase() === 'cancelled' ? (
+              {isCancelled ? (
                 <XCircle className="w-5 h-5" />
               ) : index <= currentIndex ? (
                 <CheckCircle className="w-5 h-5" />
@@ -37,10 +49,10 @@ const ProgressTracker = ({ status }) => {
                 <span>{index + 1}</span>
               )}
             </div>
-            {index < 3 && (
+            {index < statuses.length - 1 && (
               <div
                 className={`absolute top-4 left-1/2 w-full h-1 ${
-                  status.toLowerCase() === 'cancelled'
+                  isCancelled
                     ? 'bg-red-200'
                     : index < currentIndex
                     ? 'bg-agritech-green'
@@ -48,17 +60,17 @@ const ProgressTracker = ({ status }) => {
                 }`}
               />
             )}
-            <p className="mt-2 text-xs capitalize text-gray-600">{step}</p>
+            <p className="mt-2 text-xs text-gray-600">{step}</p>
           </div>
         </div>
       ))}
-      {status.toLowerCase() === 'cancelled' && (
+      {isCancelled && (
         <div className="flex-1 text-center">
           <div className="relative">
             <div className="w-8 h-8 mx-auto rounded-full flex items-center justify-center bg-red-500 text-white">
               <XCircle className="w-5 h-5" />
             </div>
-            <p className="mt-2 text-xs capitalize text-gray-600">Cancelled</p>
+            <p className="mt-2 text-xs text-gray-600">Cancelled</p>
           </div>
         </div>
       )}
@@ -74,6 +86,23 @@ const TrackOrders = () => {
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [cancelOrderId, setCancelOrderId] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Valid status transitions (matching backend)
+  const validTransitions = {
+    self_pickup: {
+      Pending: ['Ready for Pickup', 'Cancelled'],
+      'Ready for Pickup': ['Delivered'],
+      Delivered: [],
+      Cancelled: [],
+    },
+    parcel: {
+      Pending: ['Packed', 'Cancelled'],
+      Packed: ['Shipped'],
+      Shipped: ['Delivered'],
+      Delivered: [],
+      Cancelled: [],
+    },
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -100,6 +129,23 @@ const TrackOrders = () => {
   const handleCancelOrder = async () => {
     setIsLoading(true);
     try {
+      const order = orders.find((o) => o.id === cancelOrderId);
+      if (!order) {
+        throw new Error('Order not found');
+      }
+      const currentStatus = order.status;
+      const deliveryMethod = order.delivery_method;
+
+      // Validate status transition
+      if (!validTransitions[deliveryMethod][currentStatus]?.includes('Cancelled')) {
+        toast({
+          title: 'Invalid Action',
+          description: `Cannot cancel order in ${currentStatus} status`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       await axios.put(
         `http://localhost:8000/orders/${cancelOrderId}/status`,
         { status: 'Cancelled' },
@@ -122,6 +168,8 @@ const TrackOrders = () => {
         errorMessage = 'You do not have permission to cancel this order';
       } else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       toast({
         title: 'Error',
@@ -233,19 +281,26 @@ const TrackOrders = () => {
                               })}
                             </td>
                             <td className="px-6 py-4">
-                              <span
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  order.status.toLowerCase() === 'delivered'
-                                    ? 'bg-green-100 text-green-700'
-                                    : order.status.toLowerCase() === 'shipped'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : order.status.toLowerCase() === 'cancelled'
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-yellow-100 text-yellow-700'
-                                }`}
-                              >
-                                {order.status.replace('_', ' ')}
-                              </span>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span
+                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                      order.status === 'Delivered'
+                                        ? 'bg-green-100 text-green-700'
+                                        : order.status === 'Shipped' || order.status === 'Ready for Pickup'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : order.status === 'Cancelled'
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-yellow-100 text-yellow-700'
+                                    }`}
+                                  >
+                                    {order.status}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-800 text-white p-2 rounded text-xs">
+                                  Current order status
+                                </TooltipContent>
+                              </Tooltip>
                             </td>
                             <td className="px-6 py-4">
                               {order.delivery_method === 'self_pickup' ? 'Self Pickup' : 'Parcel'}
@@ -271,7 +326,7 @@ const TrackOrders = () => {
                                   View order details
                                 </TooltipContent>
                               </Tooltip>
-                              {['pending', 'processing'].includes(order.status.toLowerCase()) && (
+                              {['Pending'].includes(order.status) && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
@@ -303,7 +358,10 @@ const TrackOrders = () => {
                                     <h4 className="text-sm font-semibold text-agritech-darkGreen mb-2">
                                       Order Progress
                                     </h4>
-                                    <ProgressTracker status={order.status} />
+                                    <ProgressTracker
+                                      status={order.status}
+                                      deliveryMethod={order.delivery_method}
+                                    />
                                   </div>
 
                                   {/* Order Items */}
