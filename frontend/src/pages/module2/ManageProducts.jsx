@@ -17,9 +17,9 @@ import axios from 'axios';
 // Progress Tracker Component for Order Status
 const ProgressTracker = ({ status, deliveryMethod }) => {
   const statuses = deliveryMethod === 'self_pickup'
-    ? ['pending', 'ready for pickup', 'delivered']
-    : ['pending', 'packed', 'shipped', 'delivered'];
-  const currentIndex = statuses.indexOf(status.toLowerCase());
+    ? ['Pending', 'Ready for Pickup', 'Delivered']
+    : ['Pending', 'Packed', 'Shipped', 'Delivered'];
+  const currentIndex = statuses.indexOf(status);
 
   return (
     <div className="flex items-center justify-between w-full mt-4">
@@ -84,6 +84,23 @@ const ManageProducts = () => {
   const [orderStatus, setOrderStatus] = useState({});
   const [expandedOrder, setExpandedOrder] = useState(null);
 
+  // Valid status transitions (matching backend)
+  const validTransitions = {
+    self_pickup: {
+      Pending: ['Ready for Pickup'],
+      'Ready for Pickup': ['Delivered'],
+      Delivered: [],
+      Cancelled: [],
+    },
+    parcel: {
+      Pending: ['Packed'],
+      Packed: ['Shipped'],
+      Shipped: ['Delivered'],
+      Delivered: [],
+      Cancelled: [],
+    },
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -146,13 +163,17 @@ const ManageProducts = () => {
       if (imageFile) {
         const formData = new FormData();
         formData.append('file', imageFile);
-        const uploadResponse = await axios.post('http://localhost:8000/upload', formData, {
-          headers: {
-            'X-Session-ID': localStorage.getItem('session_id'),
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        imageUrl = uploadResponse.data.url;
+        const uploadResponse = await axios.post(
+          'http://localhost:8000/products/upload-image',
+          formData,
+          {
+            headers: {
+              'X-Session-ID': localStorage.getItem('session_id'),
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+        imageUrl = uploadResponse.data.image_url;
       }
       const productData = {
         ...newProduct,
@@ -171,7 +192,7 @@ const ManageProducts = () => {
         unit: 'kg',
         price: '',
         description: '',
-        image: '/lovable-Uploads/dfae19bc-0068-4451-9902-2b41432ac120.png',
+        image: '/lovable-uploads/dfae19bc-0068-4451-9902-2b41432ac120.png',
       });
       setImageFile(null);
       setErrors({});
@@ -181,9 +202,10 @@ const ManageProducts = () => {
         description: 'Product added successfully',
       });
     } catch (error) {
+      const errorMessage = error.response?.data?.detail || 'Failed to add product';
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to add product',
+        description: errorMessage,
         variant: 'destructive',
       });
       if (error.response?.status === 401) navigate('/login');
@@ -207,13 +229,17 @@ const ManageProducts = () => {
       if (imageFile) {
         const formData = new FormData();
         formData.append('file', imageFile);
-        const uploadResponse = await axios.post('http://localhost:8000/upload', formData, {
-          headers: {
-            'X-Session-ID': localStorage.getItem('session_id'),
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        imageUrl = uploadResponse.data.url;
+        const uploadResponse = await axios.post(
+          'http://localhost:8000/products/upload-image',
+          formData,
+          {
+            headers: {
+              'X-Session-ID': localStorage.getItem('session_id'),
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+        imageUrl = uploadResponse.data.image_url;
       }
       const productData = {
         ...newProduct,
@@ -232,7 +258,7 @@ const ManageProducts = () => {
         unit: 'kg',
         price: '',
         description: '',
-        image: '/lovable-Uploads/dfae19bc-0068-4451-9902-2b41432ac120.png',
+        image: '/lovable-uploads/dfae19bc-0068-4451-9902-2b41432ac120.png',
       });
       setImageFile(null);
       setEditProductId(null);
@@ -243,9 +269,10 @@ const ManageProducts = () => {
         description: 'Product updated successfully',
       });
     } catch (error) {
+      const errorMessage = error.response?.data?.detail || 'Failed to update product';
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to update product',
+        description: errorMessage,
         variant: 'destructive',
       });
       if (error.response?.status === 401) navigate('/login');
@@ -268,9 +295,10 @@ const ManageProducts = () => {
         description: 'Product deleted successfully',
       });
     } catch (error) {
+      const errorMessage = error.response?.data?.detail || 'Failed to delete product';
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to delete product',
+        description: errorMessage,
         variant: 'destructive',
       });
       if (error.response?.status === 401) navigate('/login');
@@ -314,54 +342,77 @@ const ManageProducts = () => {
     }
   };
 
-  const handleUpdateOrderDetails = async (orderId) => {
+  const handleUpdateOrderStatus = async (orderId, order) => {
     setIsLoading(true);
     try {
-      const details = orderDetails[orderId];
-      const updateData = {};
-      if (details.pickup_time) {
-        updateData.pickup_time = details.pickup_time;
-      }
-      if (details.tracking_link) {
-        updateData.tracking_link = details.tracking_link;
-      }
-      await axios.put(`http://localhost:8000/orders/${orderId}/details`, updateData, {
-        headers: { 'X-Session-ID': localStorage.getItem('session_id') },
-      });
-      toast({
-        title: 'Success',
-        description: 'Order details updated successfully',
-      });
-      await handleViewOrders(selectedProduct);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.detail || 'Failed to update order details',
-        variant: 'destructive',
-      });
-      if (error.response?.status === 401) navigate('/login');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const newStatus = orderStatus[orderId];
+      const currentStatus = order.status;
+      const deliveryMethod = order.delivery_method;
 
-  const handleUpdateOrderStatus = async (orderId) => {
-    setIsLoading(true);
-    try {
-      await axios.put(`http://localhost:8000/orders/${orderId}/status`, {
-        status: orderStatus[orderId],
-      }, {
-        headers: { 'X-Session-ID': localStorage.getItem('session_id') },
-      });
+      // Validate status transition
+      if (!validTransitions[deliveryMethod][currentStatus]?.includes(newStatus)) {
+        toast({
+          title: 'Invalid Status Transition',
+          description: `Cannot change status from ${currentStatus} to ${newStatus}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // For self_pickup, ensure pickup_time is set for Ready for Pickup
+      if (deliveryMethod === 'self_pickup' && newStatus === 'Ready for Pickup') {
+        const pickupTime = orderDetails[orderId]?.pickup_time;
+        if (!pickupTime) {
+          toast({
+            title: 'Missing Pickup Time',
+            description: 'Please set an approximate pickup time before marking as Ready for Pickup.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        // Update pickup_time
+        await axios.put(
+          `http://localhost:8000/orders/${orderId}/details`,
+          { pickup_time: pickupTime },
+          {
+            headers: { 'X-Session-ID': localStorage.getItem('session_id') },
+          }
+        );
+      }
+
+      // For parcel, include tracking_link for Shipped
+      if (deliveryMethod === 'parcel' && newStatus === 'Shipped') {
+        const trackingLink = orderDetails[orderId]?.tracking_link;
+        if (trackingLink) {
+          await axios.put(
+            `http://localhost:8000/orders/${orderId}/details`,
+            { tracking_link: trackingLink },
+            {
+              headers: { 'X-Session-ID': localStorage.getItem('session_id') },
+            }
+          );
+        }
+      }
+
+      // Update status
+      await axios.put(
+        `http://localhost:8000/orders/${orderId}/status`,
+        { status: newStatus },
+        {
+          headers: { 'X-Session-ID': localStorage.getItem('session_id') },
+        }
+      );
+
       toast({
         title: 'Success',
         description: 'Order status updated successfully',
       });
       await handleViewOrders(selectedProduct);
     } catch (error) {
+      const errorMessage = error.response?.data?.detail || 'Failed to update order status';
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to update order status',
+        description: errorMessage,
         variant: 'destructive',
       });
       if (error.response?.status === 401) navigate('/login');
@@ -663,14 +714,36 @@ const ManageProducts = () => {
                   {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="image">Product Image</Label>
+                  <Label htmlFor="image">Product Image (jpg, jpeg, png)</Label>
                   <Input
                     id="image"
                     type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files[0])}
+                    accept="image/jpeg,image/jpg,image/png"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        if (!['jpg', 'jpeg', 'png'].includes(ext)) {
+                          toast({
+                            title: 'Invalid File',
+                            description: 'Only jpg, jpeg, or png files are allowed.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        setImageFile(file);
+                      }
+                    }}
                     className="h-10"
                   />
+                  {imageFile && (
+                    <img
+                      src={URL.createObjectURL(imageFile)}
+                      alt="Preview"
+                      className="mt-2 w-32 h-32 object-cover rounded"
+                    />
+                  )}
+                  {isLoading && <p className="text-sm text-gray-500 mt-2">Uploading image...</p>}
                 </div>
               </div>
               <DialogFooter className="mt-6">
@@ -685,7 +758,7 @@ const ManageProducts = () => {
                       unit: 'kg',
                       price: '',
                       description: '',
-                      image: '/lovable-Uploads/dfae19bc-0068-4451-9902-2b41432ac120.png',
+                      image: '/lovable-uploads/dfae19bc-0068-4451-9902-2b41432ac120.png',
                     });
                     setImageFile(null);
                     setErrors({});
@@ -803,14 +876,36 @@ const ManageProducts = () => {
                   {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="image">Product Image</Label>
+                  <Label htmlFor="image">Product Image (jpg, jpeg, png)</Label>
                   <Input
                     id="image"
                     type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files[0])}
+                    accept="image/jpeg,image/jpg,image/png"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        if (!['jpg', 'jpeg', 'png'].includes(ext)) {
+                          toast({
+                            title: 'Invalid File',
+                            description: 'Only jpg, jpeg, or png files are allowed.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        setImageFile(file);
+                      }
+                    }}
                     className="h-10"
                   />
+                  {imageFile && (
+                    <img
+                      src={URL.createObjectURL(imageFile)}
+                      alt="Preview"
+                      className="mt-2 w-32 h-32 object-cover rounded"
+                    />
+                  )}
+                  {isLoading && <p className="text-sm text-gray-500 mt-2">Uploading image...</p>}
                 </div>
               </div>
               <DialogFooter className="mt-6">
@@ -825,7 +920,7 @@ const ManageProducts = () => {
                       unit: 'kg',
                       price: '',
                       description: '',
-                      image: '/lovable-Uploads/dfae19bc-0068-4451-9902-2b41432ac120.png',
+                      image: '/lovable-uploads/dfae19bc-0068-4451-9902-2b41432ac120.png',
                     });
                     setImageFile(null);
                     setEditProductId(null);
@@ -942,7 +1037,8 @@ const ManageProducts = () => {
                                   className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                     order.status.toLowerCase() === 'delivered'
                                       ? 'bg-green-100 text-green-700'
-                                      : order.status.toLowerCase() === 'shipped' || order.status.toLowerCase() === 'ready for pickup'
+                                      : order.status.toLowerCase() === 'shipped' ||
+                                        order.status.toLowerCase() === 'ready for pickup'
                                       ? 'bg-blue-100 text-blue-700'
                                       : 'bg-yellow-100 text-yellow-700'
                                   }`}
@@ -988,7 +1084,8 @@ const ManageProducts = () => {
                                         Name: {order.delivery.full_name}
                                       </p>
                                       <p className="text-sm text-gray-600">
-                                        Address: {order.delivery.address}, {order.delivery.city}, {order.delivery.state} {order.delivery.pin_code}
+                                        Address: {order.delivery.address}, {order.delivery.city},{' '}
+                                        {order.delivery.state} {order.delivery.pin_code}
                                       </p>
                                       <p className="text-sm text-gray-600">
                                         Phone: {order.delivery.phone_number}
@@ -1002,10 +1099,14 @@ const ManageProducts = () => {
                                       </h4>
                                       <ul className="space-y-2">
                                         {order.products.map((item) => (
-                                          <li key={item.id} className="flex items-center gap-2 text-sm text-gray-600">
+                                          <li
+                                            key={item.id}
+                                            className="flex items-center gap-2 text-sm text-gray-600"
+                                          >
                                             <Package className="h-4 w-4 text-agritech-green" />
                                             <span>
-                                              {item.name} - Qty: {item.quantity} - ₹{(item.price * item.quantity).toFixed(2)}
+                                              {item.name} - Qty: {item.quantity} - ₹
+                                              {(item.price * item.quantity).toFixed(2)}
                                             </span>
                                           </li>
                                         ))}
@@ -1015,29 +1116,39 @@ const ManageProducts = () => {
                                     {/* Order Management */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                       <div>
-                                        <Label htmlFor={`status-${order.id}`} className="text-sm font-medium">
+                                        <Label
+                                          htmlFor={`status-${order.id}`}
+                                          className="text-sm font-medium"
+                                        >
                                           Update Status
                                         </Label>
                                         <Select
                                           value={orderStatus[order.id] || order.status}
-                                          onValueChange={(value) => setOrderStatus({ ...orderStatus, [order.id]: value })}
+                                          onValueChange={(value) =>
+                                            setOrderStatus({ ...orderStatus, [order.id]: value })
+                                          }
                                         >
-                                          <SelectTrigger id={`status-${order.id}`} className="h-10 mt-1">
+                                          <SelectTrigger
+                                            id={`status-${order.id}`}
+                                            className="h-10 mt-1"
+                                          >
                                             <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent>
                                             {order.delivery_method === 'self_pickup' ? (
                                               <>
-                                                <SelectItem value="pending">Pending</SelectItem>
-                                                <SelectItem value="ready for pickup">Ready for Pickup</SelectItem>
-                                                <SelectItem value="delivered">Delivered</SelectItem>
+                                                <SelectItem value="Pending">Pending</SelectItem>
+                                                <SelectItem value="Ready for Pickup">
+                                                  Ready for Pickup
+                                                </SelectItem>
+                                                <SelectItem value="Delivered">Delivered</SelectItem>
                                               </>
                                             ) : (
                                               <>
-                                                <SelectItem value="pending">Pending</SelectItem>
-                                                <SelectItem value="packed">Packed</SelectItem>
-                                                <SelectItem value="shipped">Shipped</SelectItem>
-                                                <SelectItem value="delivered">Delivered</SelectItem>
+                                                <SelectItem value="Pending">Pending</SelectItem>
+                                                <SelectItem value="Packed">Packed</SelectItem>
+                                                <SelectItem value="Shipped">Shipped</SelectItem>
+                                                <SelectItem value="Delivered">Delivered</SelectItem>
                                               </>
                                             )}
                                           </SelectContent>
@@ -1046,7 +1157,7 @@ const ManageProducts = () => {
                                           <TooltipTrigger asChild>
                                             <Button
                                               className="mt-2 bg-agritech-green hover:bg-agritech-darkGreen"
-                                              onClick={() => handleUpdateOrderStatus(order.id)}
+                                              onClick={() => handleUpdateOrderStatus(order.id, order)}
                                               disabled={isLoading}
                                             >
                                               Update Status
@@ -1060,7 +1171,10 @@ const ManageProducts = () => {
                                       <div>
                                         {order.delivery_method === 'self_pickup' ? (
                                           <div>
-                                            <Label htmlFor={`pickup-time-${order.id}`} className="text-sm font-medium">
+                                            <Label
+                                              htmlFor={`pickup-time-${order.id}`}
+                                              className="text-sm font-medium"
+                                            >
                                               Approximate Pickup Time
                                             </Label>
                                             <Input
@@ -1081,7 +1195,10 @@ const ManageProducts = () => {
                                           </div>
                                         ) : (
                                           <div>
-                                            <Label htmlFor={`tracking-link-${order.id}`} className="text-sm font-medium">
+                                            <Label
+                                              htmlFor={`tracking-link-${order.id}`}
+                                              className="text-sm font-medium"
+                                            >
                                               Tracking Link
                                             </Label>
                                             <Input
@@ -1101,20 +1218,6 @@ const ManageProducts = () => {
                                             />
                                           </div>
                                         )}
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              className="mt-2 bg-agritech-green hover:bg-agritech-darkGreen"
-                                              onClick={() => handleUpdateOrderDetails(order.id)}
-                                              disabled={isLoading}
-                                            >
-                                              Update Details
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent className="bg-gray-800 text-white p-2 rounded text-xs">
-                                            Save pickup time or tracking link
-                                          </TooltipContent>
-                                        </Tooltip>
                                       </div>
                                     </div>
                                   </div>
@@ -1129,10 +1232,7 @@ const ManageProducts = () => {
                 </div>
               )}
               <DialogFooter className="mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowViewOrders(false)}
-                >
+                <Button variant="outline" onClick={() => setShowViewOrders(false)}>
                   Close
                 </Button>
               </DialogFooter>

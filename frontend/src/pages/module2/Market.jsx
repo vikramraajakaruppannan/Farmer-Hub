@@ -188,7 +188,7 @@ const Market = () => {
               />
             </div>
             <div className="flex space-x-2 overflow-x-auto pb-2">
-              {['All Items', 'Seeds', 'Fertilizers', 'Pesticides'].map((tab) => (
+              {['All Items', 'Seeds', 'Fertilizers', 'Pesticides','Tools'].map((tab) => (
                 <Button
                   key={tab}
                   variant={activeTab === tab ? 'default' : 'outline'}
