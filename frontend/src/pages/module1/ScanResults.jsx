@@ -81,22 +81,36 @@ const ScanResults = () => {
     navigate('/feedback');
   };
 
-  // Clean prevention text to remove asterisks, bold labels, and format as sentences
+  // Clean prevention text to four numbered sentences
   const formatPrevention = (prevention) => {
-    if (!prevention) return [];
-    // Split by newlines, remove asterisks, bold labels, and trim
+    if (!prevention) {
+      return [
+        "1. Apply neem oil to affected areas as an organic treatment.",
+        "2. Use a fungicide like chlorothalonil for chemical control.",
+        "3. Prune infected branches to improve cultural practices.",
+        "4. Ensure good air circulation around the plant.",
+      ];
+    }
     const lines = prevention
       .split('\n')
       .map((line) =>
         line
-          .replace(/^\*\s*|\-\s*/, '') // Remove * or -
-          .replace(/\*\*.*?:\*\*\s*/, '') // Remove bold labels like **Organic treatment:**
-          .replace(/\*\*/, '') // Remove any remaining **
+          .replace(/^\-\s*|\*\s*|\**\s*/, '') // Remove -, *, or **
+          .replace(/\[.*?\]|\(.*?\)/g, '') // Remove markdown links/parentheses
           .trim()
       )
       .filter((line) => line)
-      .slice(0, 4); // Limit to 4 methods
-    // Convert to numbered sentences
+      .slice(0, 4);
+    // Pad with defaults if fewer than 4
+    const defaults = [
+      "Apply neem oil to affected areas as an organic treatment.",
+      "Use a fungicide like chlorothalonil for chemical control.",
+      "Prune infected branches to improve cultural practices.",
+      "Ensure good air circulation around the plant.",
+    ];
+    while (lines.length < 4) {
+      lines.push(defaults[lines.length]);
+    }
     return lines.map((line, i) => `${i + 1}. ${line.charAt(0).toUpperCase() + line.slice(1)}`);
   };
 
@@ -209,9 +223,6 @@ const ScanResults = () => {
                               {formatPrevention(disease.prevention).map((line, i) => (
                                 <p key={i}>{line}</p>
                               ))}
-                              {formatPrevention(disease.prevention).length === 0 && (
-                                <p>No specific recommendations available.</p>
-                              )}
                             </div>
                           </div>
                         </div>

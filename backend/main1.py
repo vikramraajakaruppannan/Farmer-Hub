@@ -1,38 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Import FastAPI apps from modules
-try:
-    from login import app as login_app
-except ImportError as e:
-    logger.error(f"Failed to import login_app: {str(e)}")
-    raise
-
-try:
-    from dashboard import app as dashboard_app
-except ImportError as e:
-    logger.error(f"Failed to import dashboard_app: {str(e)}")
-    raise
-
-try:
-    from profile import app as profile_app
-except ImportError as e:
-    logger.error(f"Failed to import profile_app: {str(e)}")
-    raise
-
-try:
-    from part1 import app as module1_app
-except ImportError as e:
-    logger.error(f"Failed to import module1_app: {str(e)}")
-    raise
+from .auth import app as auth_app
+from .disease_detection import app as disease_detection_app
+from .ecommerce import app as ecommerce_app
+from .utils import supabase, logger
 
 app = FastAPI()
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8080"],
@@ -42,10 +16,17 @@ app.add_middleware(
 )
 
 # Mount sub-applications
-app.mount("/auth", login_app)
-app.mount("/dashboard", dashboard_app)
-app.mount("/profile", profile_app)
-app.mount("/disease", module1_app)
+app.mount("/auth", auth_app)
+app.mount("/disease", disease_detection_app)
+app.mount("/ecommerce", ecommerce_app)
+
+@app.on_event("startup")
+async def startup_event():
+    try:
+        buckets = supabase.storage.list_buckets()
+        logger.info(f"Available buckets: {[b['id'] for b in buckets]}")
+    except Exception as e:
+        logger.error(f"Error listing buckets on startup: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

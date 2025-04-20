@@ -95,7 +95,7 @@ const Sidebar = () => {
           </li>
           <li>
             <NavLink 
-              to="/market" 
+              to="/market-home" 
               className={({ isActive }) => 
                 `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
                   isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
@@ -104,19 +104,6 @@ const Sidebar = () => {
             >
               <ShoppingBasket className="h-5 w-5 mr-3" />
               Market & Sales
-            </NavLink>
-          </li>
-          <li>
-            <NavLink 
-              to="/supply-chain" 
-              className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
-                }`
-              }
-            >
-              <Truck className="h-5 w-5 mr-3" />
-              Supply Chain
             </NavLink>
           </li>
           <li>

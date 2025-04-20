@@ -24,6 +24,7 @@ const Login = () => {
     if (!sessionId) {
       localStorage.removeItem('session_id');
       localStorage.removeItem('user');
+      localStorage.removeItem('user_id');
       sessionStorage.removeItem('user');
     }
   }, [location.state]);
@@ -48,6 +49,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      // Login request
       const response = await fetch('http://localhost:8000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,7 +68,29 @@ const Login = () => {
         role: selectedCategory,
       };
 
+      // Store session_id
       localStorage.setItem('session_id', data.session_id);
+
+      // Fetch user_id from /user endpoint
+      const userResponse = await fetch('http://localhost:8000/user', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': data.session_id,
+        },
+      });
+
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const userProfile = await userResponse.json();
+      if (!userProfile.id) {
+        throw new Error('User ID not found in profile');
+      }
+      localStorage.setItem('user_id', userProfile.id);
+
+      // Store user data based on rememberMe
       if (rememberMe) {
         localStorage.setItem('user', JSON.stringify(userData));
       } else {
@@ -80,13 +104,18 @@ const Login = () => {
 
       // Redirect based on category
       const redirectPath = selectedCategory === 'Farmer' ? '/dashboard' : '/invest';
-      navigate(redirectPath, { replace: true }); // Replace history entry
-      window.history.pushState(null, null, window.location.href); // Prevent back navigation
+      navigate(redirectPath, { replace: true });
+      window.history.pushState(null, null, window.location.href);
       window.onpopstate = () => {
-        window.history.pushState(null, null, window.location.href); // Keep pushing forward
+        window.history.pushState(null, null, window.location.href);
       };
     } catch (err) {
       setErrors({ auth: err.message || 'Invalid email or password' });
+      toast({
+        title: 'Login Failed',
+        description: err.message || 'Invalid email or password',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +164,6 @@ const Login = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                
               </div>
               <div className="relative">
                 <input 
@@ -163,10 +191,9 @@ const Login = () => {
                 </button>
               </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-
               <Link to="/forgot-password" className="text-sm text-agritech-green hover:underline">
-                  Forgot password?
-                </Link>
+                Forgot password?
+              </Link>
             </div>
               
             <div>

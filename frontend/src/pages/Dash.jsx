@@ -84,7 +84,7 @@ const Dashboard = () => {
   // Fetch weather based on location
   useEffect(() => {
     const fetchWeather = async (lat, lon) => {
-      const apiKey = "9452c1a113a31ea76f6bf710b0bdeece";
+      const apiKey = "d317c11b3ef97793e88be6dd4fb6ffa8";
       if (!apiKey) {
         setWeatherError('Weather API key is missing');
         setWeatherLoading(false);

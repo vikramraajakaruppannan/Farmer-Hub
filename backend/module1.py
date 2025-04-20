@@ -80,19 +80,14 @@ async def detect_plant_disease(image_content: bytes):
 
 async def get_prevention_methods(disease_name: str, plant_name: str = "plant"):
     """Get prevention methods using Groq API"""
-    prompt = f"""Provide 4 prevention/treatment methods for {disease_name} in {plant_name}:
-    - Organic treatment
-    - Chemical solution
-    - Cultural practice
-    - Environmental adjustment
-    Format as bullet points."""
+    prompt = f"""Provide exactly 4 prevention/treatment methods for {disease_name} in {plant_name}. Use concise bullet points starting with a hyphen (-), one for each category: organic treatment, chemical solution, cultural practice, environmental adjustment. Do not include headers, introductions, or extra text."""
     
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     payload = {
         "messages": [{"role": "user", "content": prompt}],
         "model": "llama3-70b-8192",
         "temperature": 0.7,
-        "max_tokens": 200
+        "max_tokens": 400  # Increased to ensure complete output
     }
 
     try:
@@ -103,7 +98,24 @@ async def get_prevention_methods(disease_name: str, plant_name: str = "plant"):
             timeout=10
         )
         response.raise_for_status()
-        return response.json()['choices'][0]['message']['content']
+        content = response.json()['choices'][0]['message']['content']
+        # Validate exactly 4 methods
+        methods = [m.strip() for m in content.split('\n') if m.strip().startswith('-')]
+        if len(methods) < 4:
+            logger.warning(f"Only {len(methods)} methods returned for {disease_name}")
+            # Fallback to generic methods
+            methods = [
+                "- Apply neem oil to affected areas as an organic treatment.",
+                "- Use a fungicide like chlorothalonil for chemical control.",
+                "- Prune infected branches to improve cultural practices.",
+                "- Ensure good air circulation around the plant."
+            ]
+        return '\n'.join(methods[:4])
     except Exception as e:
         logger.error(f"Groq API error: {str(e)}")
-        return "- No prevention data available"
+        return "\n".join([
+            "- Apply neem oil to affected areas as an organic treatment.",
+            "- Use a fungicide like chlorothalonil for chemical control.",
+            "- Prune infected branches to improve cultural practices.",
+            "- Ensure good air circulation around the plant."
+        ])

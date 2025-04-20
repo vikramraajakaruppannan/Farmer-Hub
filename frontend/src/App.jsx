@@ -55,8 +55,8 @@ const App = () => (
           <Route path="/market-home" element={<MarketHome />} />
           <Route path="/market" element={<Market />} />
           <Route path="/product/:id" element={<ProductDetails />} />
-          <Route path="/delivery/:id" element={<Delivery />} />
-          <Route path="/billing/:id" element={<Billing />} />
+          <Route path="/delivery" element={<Delivery />} />
+          <Route path="/billing" element={<Billing />} />
           <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
           <Route path="/track-orders" element={<TrackOrders />} />
           <Route path="/manage-products" element={<ManageProducts />} />
