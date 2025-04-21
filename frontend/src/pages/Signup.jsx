@@ -8,11 +8,9 @@ const Signup = () => {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     mobile: '',
     password: '',
@@ -22,29 +20,36 @@ const Signup = () => {
   
   const [errors, setErrors] = useState({});
 
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
-  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData({
+      ...formData,
+      [name]: value
+    });
     
     // Real-time validation for confirm password
     if (name === 'confirmPassword' || name === 'password') {
       if (name === 'confirmPassword' && value !== formData.password) {
-        setErrors({ ...errors, confirmPassword: "Passwords do not match" });
+        setErrors({...errors, confirmPassword: "Passwords do not match"});
       } else if (name === 'password' && value !== formData.confirmPassword && formData.confirmPassword) {
-        setErrors({ ...errors, confirmPassword: "Passwords do not match" });
+        setErrors({...errors, confirmPassword: "Passwords do not match"});
       } else {
-        setErrors({ ...errors, confirmPassword: null });
+        setErrors({...errors, confirmPassword: null});
       }
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
+    if (!formData.name.trim()) newErrors.name = "Name is required";
     
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
@@ -76,83 +81,101 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const checkIfUserExists = () => {
+    // Get all users from localStorage
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    
+    // Check if a user with the same email and category already exists
+    const userWithEmailExists = users.some(user => 
+      user.email === formData.email && 
+      user.category === formData.category
+    );
+    
+    // Check if a user with the same mobile and category already exists
+    const userWithMobileExists = users.some(user => 
+      user.mobile === formData.mobile && 
+      user.category === formData.category
+    );
+    
+    return { userWithEmailExists, userWithMobileExists };
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    try {
-      const response = await fetch('http://localhost:8000/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          mobile: formData.mobile,
-          category: formData.category
-          // Note: mobile and category aren't sent to backend yet; adjust backend if needed
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || 'Signup failed');
-
+    
+    if (validateForm()) {
+      // Check if user already exists
+      const { userWithEmailExists, userWithMobileExists } = checkIfUserExists();
+      
+      if (userWithEmailExists) {
+        setErrors(prev => ({
+          ...prev,
+          email: `Account with this email already exists for the ${formData.category} category`
+        }));
+        return;
+      }
+      
+      if (userWithMobileExists) {
+        setErrors(prev => ({
+          ...prev,
+          mobile: `Account with this mobile number already exists for the ${formData.category} category`
+        }));
+        return;
+      }
+      
+      // Get all users from localStorage
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      
+      // Add new user (excluding confirmPassword)
+      const { confirmPassword, ...userToSave } = formData;
+      users.push(userToSave);
+      
+      // Save updated users list
+      localStorage.setItem('users', JSON.stringify(users));
+      
+      // Also save current user info for auto-login
+      const { password, ...userInfo } = userToSave;
+      localStorage.setItem('user', JSON.stringify(userInfo));
+      
+      // Show success toast
       toast({
         title: "Account created!",
-        description: data.message,
+        description: "You have successfully signed up.",
       });
-      setTimeout(() => navigate('/login', { state: { signupSuccess: true, message: data.message } }), 2000);
-    } catch (err) {
-      setErrors({ ...errors, general: err.message || 'An error occurred during signup' });
-    } finally {
-      setIsLoading(false);
+      
+      // Redirect to dashboard
+      navigate('/dashboard');
     }
   };
 
   const handleCategorySelect = (category) => {
-    setFormData({ ...formData, category });
+    setFormData({
+      ...formData,
+      category
+    });
   };
 
   const handleGoBack = () => {
-    navigate(-1);
+    navigate(-1); // Navigate to previous page
   };
 
   return (
-    <div className="min-h-screen bg-agritech-paleGreen flex items-center justify-center p-4">
-      <button 
-        className="absolute top-4 left-4 p-2 text-gray-600 hover:text-gray-900"
-        onClick={handleGoBack}
-      >
-        <ArrowLeft className="h-5 w-5" />
-        <span className="sr-only">Back</span>
-      </button>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#A6E483' }}>
+     
       
       <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
-        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('/lovable-uploads/24600f67-3c2c-4eac-8ddc-cd77bc25260c.png')" }}>
-          <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/30 to-black/50">
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
-              <div className="flex items-center mb-2">
-                <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-                  <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
-                </svg>
-                <h3 className="ml-2 text-sm font-medium text-white">Secure Sign Up</h3>
-              </div>
-              <p className="text-xs text-white/80">Protected with encryption</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mt-auto">
-              <h3 className="text-xl font-bold text-white mb-2">Welcome to AgriTech</h3>
-              <p className="text-white/80">Start your journey with us</p>
-            </div>
-          </div>
-        </div>
         
+        
+        {/* left side - Signup form */}
         <div className="p-8 md:p-12 w-full md:w-1/2">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Create Account</h2>
-          <p className="text-gray-600 mb-6">Join our community today</p>
-          {errors.general && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{errors.general}</div>}
+         <Link to="/" className="flex items-center text-sm text-agritech-green hover:underline mb-4">
+                <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </Link>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Create Your Account</h2>
+          
           
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
@@ -166,7 +189,6 @@ const Signup = () => {
                       ? 'border-agritech-green bg-agritech-paleGreen' 
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  disabled={isLoading}
                 >
                   {formData.category === 'Farmer' && (
                     <span className="absolute top-2 right-2 text-agritech-green">
@@ -187,7 +209,6 @@ const Signup = () => {
                       ? 'border-agritech-green bg-agritech-paleGreen' 
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  disabled={isLoading}
                 >
                   {formData.category === 'Investor' && (
                     <span className="absolute top-2 right-2 text-agritech-green">
@@ -203,65 +224,48 @@ const Signup = () => {
               {errors.category && <p className="text-red-500 text-xs mt-2 text-center">{errors.category}</p>}
             </div>
             
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input 
+                type="text" 
+                id="name"
+                name="name"
+                className={`w-full px-4 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-agritech-green focus:border-agritech-green`}
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChange={handleChange}
+              />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                 <input 
-                  type="text" 
-                  id="firstName"
-                  name="firstName"
-                  className={`w-full px-4 py-2 border ${errors.firstName ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-agritech-green focus:border-agritech-green`}
-                  placeholder="Enter first name"
-                  value={formData.firstName}
+                  type="email" 
+                  id="email"
+                  name="email"
+                  className={`w-full px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-agritech-green focus:border-agritech-green`}
+                  placeholder="Enter your email"
+                  value={formData.email}
                   onChange={handleChange}
-                  disabled={isLoading}
                 />
-                {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
+              
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
                 <input 
-                  type="text" 
-                  id="lastName"
-                  name="lastName"
-                  className={`w-full px-4 py-2 border ${errors.lastName ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-agritech-green focus:border-agritech-green`}
-                  placeholder="Enter last name"
-                  value={formData.lastName}
+                  type="tel" 
+                  id="mobile"
+                  name="mobile"
+                  className={`w-full px-4 py-2 border ${errors.mobile ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-agritech-green focus:border-agritech-green`}
+                  placeholder="10-digit mobile number"
+                  value={formData.mobile}
                   onChange={handleChange}
-                  disabled={isLoading}
                 />
-                {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+                {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
               </div>
-            </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-              <input 
-                type="email" 
-                id="email"
-                name="email"
-                className={`w-full px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-agritech-green focus:border-agritech-green`}
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-            </div>
-            
-            <div>
-              <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
-              <input 
-                type="tel" 
-                id="mobile"
-                name="mobile"
-                className={`w-full px-4 py-2 border ${errors.mobile ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-agritech-green focus:border-agritech-green`}
-                placeholder="10-digit mobile number"
-                value={formData.mobile}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
-              {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
             </div>
             
             <div>
@@ -275,14 +279,13 @@ const Signup = () => {
                   placeholder="Create a password"
                   value={formData.password}
                   onChange={handleChange}
-                  disabled={isLoading}
                 />
                 <button 
                   type="button"
                   className="absolute right-3 top-2.5 text-gray-500"
                   onClick={togglePasswordVisibility}
-                  disabled={isLoading}
                 >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
@@ -300,14 +303,13 @@ const Signup = () => {
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  disabled={isLoading}
                 />
                 <button 
                   type="button"
                   className="absolute right-3 top-2.5 text-gray-500"
                   onClick={toggleConfirmPasswordVisibility}
-                  disabled={isLoading}
                 >
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
               {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
@@ -315,20 +317,9 @@ const Signup = () => {
             
             <button
               type="submit"
-              className="w-full bg-agritech-green text-white py-3 px-4 rounded-md hover:bg-agritech-darkGreen focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-agritech-green disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-              disabled={isLoading}
+              className="w-full bg-agritech-green text-white py-3 px-4 rounded-md hover:bg-agritech-darkGreen focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-agritech-green mt-2"
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating Account...
-                </span>
-              ) : (
-                'Create Account'
-              )}
+              Create Account
             </button>
           </form>
           
@@ -336,9 +327,40 @@ const Signup = () => {
             Already have an account? <Link to="/login" className="text-agritech-green font-medium hover:underline">Sign in</Link>
           </p>
         </div>
+
+        {/* right side - Image and info */}
+        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://plus.unsplash.com/premium_photo-1661962692059-55d5a4319814?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8YWdyaWN1bHR1cmV8ZW58MHx8MHx8fDA%3D')" }}>
+          <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/30 to-black/50">
+            <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
+              <div className="flex items-center mb-2">
+                <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                  <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
+                </svg>
+                <h3 className="ml-2 text-sm font-medium text-white">Secure Sign Up</h3>
+              </div>
+              <p className="text-xs text-white/80">Protected with encryption</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mt-auto">
+              <h3 className="text-xl font-bold text-white mb-2">Welcome to AgriTech</h3>
+              <p className="text-white/80">Start your journey with us</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
 export default Signup;
+
+
+
+
+
+
+
+
+
+

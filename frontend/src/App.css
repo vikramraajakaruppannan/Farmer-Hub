@@ -40,3 +40,21 @@
 .read-the-docs {
   color: #888;
 }
+
+
+.login-bg {
+  background-color: #116530;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 40s linear infinite;
+}

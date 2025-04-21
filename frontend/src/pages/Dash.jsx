@@ -43,6 +43,33 @@ const Dashboard = () => {
   const notificationRef = useRef(null);
 
   // Handle clicks outside to close menus
+
+  useEffect(() => {
+    const addGoogleTranslate = () => {
+      const script = document.createElement('script');
+      script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+      script.async = true;
+      document.body.appendChild(script);
+    };
+  
+    window.googleTranslateElementInit = () => {
+      new window.google.translate.TranslateElement(
+        {
+          pageLanguage: 'en',
+          includedLanguages: 'en,ta',
+          layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+        },
+        'google_translate_element'
+      );
+    };
+  
+    addGoogleTranslate();
+  }, []);
+  
+
+
+
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -279,8 +306,18 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">AgriTech Platform</h1>
           <div className="flex items-center gap-3 sm:gap-4">
+
+
+           
+           
+           
+           
             {/* Notification Button */}
+
             <div className="relative" ref={notificationRef}>
+
+           
+
               <button
                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                 className="relative p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-agritech-green"
@@ -331,6 +368,8 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+
+            
 
             {/* User Button */}
             <div className="relative" ref={userMenuRef}>

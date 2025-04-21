@@ -17,6 +17,12 @@ import ScanResults from "./pages/module1/ScanResults";
 import Feedback from "./pages/module1/Feedback";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import AICropDiseasePrediction from "./pages/AICropDiseasePrediction.jsx";
+import FarmerExchangeNetwork from "./pages/FarmerExchangeNetwork";
+import ExpertConsultationPlatform from "./pages/ExpertConsultationPlatform";
+import UrbanToFarmerInvestment from "./pages/UrbanToFarmerInvestment";
+import SupplyChainBulkBuyers from "./pages/SupplyChainBulkBuyers";
+
 import Invest from "./pages/Invest";
 import MarketHome from "./pages/module2/MarketHome";
 import Market from "./pages/module2/Market";
@@ -50,7 +56,12 @@ const App = () => (
           <Route path="/scan-results" element={<ScanResults />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/profile" element={<Profile />} />
-
+          <Route path="/ai-crop-disease-prediction" element={<AICropDiseasePrediction />} />
+          <Route path="/farmer-exchange-network" element={<FarmerExchangeNetwork />} />
+          <Route path="/expert-consultation-platform" element={<ExpertConsultationPlatform />} />
+          <Route path="/urban-to-farmer-investment" element={<UrbanToFarmerInvestment />} />
+          <Route path="/Supply-Chain-Bulk-Buyers" element={<SupplyChainBulkBuyers />} />
+           
           {/* Market & Sales Routes */}
           <Route path="/market-home" element={<MarketHome />} />
           <Route path="/market" element={<Market />} />

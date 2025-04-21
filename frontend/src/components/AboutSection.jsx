@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 
 const AboutSection = () => {
   return (
-    <div className="py-16 bg-white">
+    <div id="about-section" className="py-16 bg-white"> {/* ✅ Added id for scroll */}
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 mb-8 md:mb-0 md:pr-12">
@@ -18,16 +17,10 @@ const AboutSection = () => {
               Our team consists of agricultural experts, data scientists, and developers who are passionate about building
               technology that addresses real farming challenges around the world.
             </p>
-            <Link 
-              to="/about" 
-              className="inline-block text-agritech-green font-medium hover:underline"
-            >
-              Read More
-            </Link>
           </div>
-          <div className="md:w-1/2">
+          <div className="md:w-1/3 w-full mx-auto">
             <img 
-              src="" 
+              src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGFncmljdWx0dXJlfGVufDB8fDB8fHww" 
               alt="Harvester in field at sunset" 
               className="rounded-lg shadow-lg w-full h-auto" 
             />

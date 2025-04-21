@@ -1,51 +1,29 @@
+
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Microscope, 
-  ShoppingBasket, 
-  Truck, 
-  Phone, 
-  Users, 
-  BanknoteIcon, 
-  User, 
-  LogOut 
-} from 'lucide-react';
+import { LayoutDashboard, Microscope, ShoppingBasket, Truck, Phone, Users, BanknoteIcon, User, LogOut } from 'lucide-react';
 
 const Sidebar = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
   
   useEffect(() => {
-    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-    const sessionId = localStorage.getItem('session_id');
-    if (storedUser && sessionId) {
+    // Get user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
       setUser(JSON.parse(storedUser));
     } else {
-      navigate('/login', { replace: true });
+      // Redirect to login if no user found
+      navigate('/login');
     }
   }, [navigate]);
 
-  const handleLogout = async () => {
-    const sessionId = localStorage.getItem('session_id');
-    if (sessionId) {
-      try {
-        const response = await fetch('http://localhost:8000/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: sessionId }),
-        });
-        if (!response.ok) throw new Error('Logout failed');
-      } catch (err) {
-        console.error('Logout failed:', err);
-      }
-    }
-    localStorage.removeItem('session_id');
+  const handleLogout = () => {
     localStorage.removeItem('user');
-    sessionStorage.removeItem('user');
-    navigate('/login', { replace: true });
+    navigate('/login');
   };
 
+  // Generate initials from the user's name
   const getInitials = (name) => {
     if (!name) return '';
     return name.split(' ')
@@ -55,24 +33,28 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="w-64 bg-agritech-darkGreen text-white min-h-screen flex flex-col shadow-lg">
-      <div className="p-4 sm:p-6">
+    <div className="w-64 bg-agritech-darkGreen text-white min-h-screen flex flex-col">
+      {/* Logo and Brand */}
+      <div className="p-6">
         <div className="flex items-center">
           <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center">
-            <span className="text-agritech-green font-bold text-lg">A</span>
+            <span className="text-agritech-green font-bold">A</span>
           </div>
           <span className="ml-3 text-xl font-semibold">AgriTech</span>
         </div>
       </div>
       
-      <nav className="flex-1 px-2 py-4 sm:px-4 sm:py-6">
+      {/* Navigation Menu */}
+      <nav className="flex-1 px-4 py-6">
         <ul className="space-y-1">
           <li>
             <NavLink 
               to="/dashboard" 
               className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center px-4 py-3 rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -84,8 +66,10 @@ const Sidebar = () => {
             <NavLink 
               to="/disease-detection" 
               className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center px-4 py-3 rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -97,8 +81,10 @@ const Sidebar = () => {
             <NavLink 
               to="/market" 
               className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center px-4 py-3 rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -110,8 +96,10 @@ const Sidebar = () => {
             <NavLink 
               to="/supply-chain" 
               className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center px-4 py-3 rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -123,8 +111,10 @@ const Sidebar = () => {
             <NavLink 
               to="/expert-connect" 
               className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center px-4 py-3 rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -136,8 +126,10 @@ const Sidebar = () => {
             <NavLink 
               to="/community" 
               className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center px-4 py-3 rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -149,8 +141,10 @@ const Sidebar = () => {
             <NavLink 
               to="/investments" 
               className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center px-4 py-3 rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -162,8 +156,10 @@ const Sidebar = () => {
             <NavLink 
               to="/profile" 
               className={({ isActive }) => 
-                `flex items-center px-4 py-3 rounded-lg transition-colors text-sm sm:text-base ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                `flex items-center px-4 py-3 rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -174,20 +170,21 @@ const Sidebar = () => {
         </ul>
       </nav>
       
-      <div className="p-4 sm:p-6 border-t border-white/10">
+      {/* User Profile */}
+      <div className="p-4 border-t border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              <span className="text-white text-sm sm:text-base">{user ? getInitials(user.name) : ''}</span>
+              <span className="text-white">{user ? getInitials(user.name) : ''}</span>
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-white">{user ? user.name : 'Loading...'}</p>
-              <p className="text-xs text-white/70 capitalize">{user ? user.role : ''}</p>
+              <p className="text-xs text-white/70">{user ? user.role : ''}</p>
             </div>
           </div>
           <button 
             onClick={handleLogout}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="p-2 rounded-full hover:bg-white/10"
             title="Logout"
           >
             <LogOut className="h-5 w-5 text-white/70" />
@@ -199,3 +196,5 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
+

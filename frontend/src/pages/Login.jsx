@@ -1,34 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Farmer');
   const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    if (location.state?.signupSuccess) {
-      setSuccess(location.state.message);
-    }
-    const sessionId = localStorage.getItem('session_id');
-    if (!sessionId) {
-      localStorage.removeItem('session_id');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('user');
-    }
-  }, [location.state]);
-
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -39,83 +25,73 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    setErrors({});
-    setSuccess('');
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('http://localhost:8000/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, category: selectedCategory }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
-      }
-
-      const data = await response.json();
-      const userData = {
-        email: data.email,
-        name: `${data.first_name} ${data.last_name}`,
-        role: selectedCategory,
-      };
-
-      localStorage.setItem('session_id', data.session_id);
-      if (rememberMe) {
-        localStorage.setItem('user', JSON.stringify(userData));
+    
+    if (validateForm()) {
+      // Get all users from localStorage
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      
+      // Find user with matching email, password, and category
+      const user = users.find(u => 
+        u.email === email && 
+        u.password === password && 
+        u.category === selectedCategory
+      );
+      
+      if (user) {
+        // Store user info in localStorage (except password)
+        const { password: _, ...userInfo } = user;
+        localStorage.setItem('user', JSON.stringify(userInfo));
+        
+        // Show success toast
+        toast({
+          title: "Login successful!",
+          description: `Welcome back, ${user.name}!`,
+        });
+        
+        // Redirect to dashboard
+        navigate('/dashboard');
       } else {
-        sessionStorage.setItem('user', JSON.stringify(userData));
+        // Check if user exists with different category
+        const userExists = users.some(u => 
+          u.email === email && 
+          u.password === password && 
+          u.category !== selectedCategory
+        );
+        
+        if (userExists) {
+          setErrors({
+            auth: `No account found for this email as a ${selectedCategory}. Please try another category.`
+          });
+        } else {
+          setErrors({
+            auth: "Invalid email or password"
+          });
+        }
       }
-
-      toast({
-        title: "Login successful!",
-        description: `Welcome back, ${userData.name}!`,
-      });
-
-      // Redirect based on category
-      const redirectPath = selectedCategory === 'Farmer' ? '/dashboard' : '/invest';
-      navigate(redirectPath, { replace: true }); // Replace history entry
-      window.history.pushState(null, null, window.location.href); // Prevent back navigation
-      window.onpopstate = () => {
-        window.history.pushState(null, null, window.location.href); // Keep pushing forward
-      };
-    } catch (err) {
-      setErrors({ auth: err.message || 'Invalid email or password' });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleGoBack = () => {
-    navigate("/");
+    navigate(-1); // Navigate to previous page
   };
 
   return (
-    <div className="min-h-screen bg-agritech-paleGreen flex items-center justify-center p-4">
-      <button 
-        className="absolute top-4 left-4 p-2 text-gray-600 hover:text-gray-900"
-        onClick={handleGoBack}
-      >
-        <ArrowLeft className="h-5 w-5" />
-        <span className="sr-only">Back</span>
-      </button>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#A6E483' }}>
+      
       
       <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
+        {/* Left side - Login form */}
         <div className="p-8 md:p-12 w-full md:w-1/2">
+        <Link to="/" className="flex items-center text-sm text-agritech-green hover:underline mb-4">
+        <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </Link>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome Back</h2>
           <p className="text-gray-600 mb-6">Sign in to your account</p>
-          {success && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">{success}</div>}
-          {errors.auth && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-500 text-sm">{errors.auth}</p>
-            </div>
-          )}
           
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
@@ -127,7 +103,6 @@ const Login = () => {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
@@ -135,40 +110,30 @@ const Login = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                
+                <Link to="/forgot-password" className="text-sm text-agritech-green hover:underline">
+                  Forgot password?
+                </Link>
               </div>
               <div className="relative">
                 <input 
                   type={showPassword ? "text" : "password"} 
                   id="password"
-                  className={`w-full pr-10 px-4 py-2 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  } rounded-md focus:ring-agritech-green focus:border-agritech-green`}
+                  className={`w-full px-4 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-agritech-green focus:border-agritech-green`}
                   placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
                 />
                 <button 
                   type="button"
                   className="absolute right-3 top-2.5 text-gray-500"
                   onClick={togglePasswordVisibility}
-                  disabled={isLoading}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-
-              <Link to="/forgot-password" className="text-sm text-agritech-green hover:underline">
-                  Forgot password?
-                </Link>
             </div>
-              
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">Select Your Category</label>
               <div className="flex gap-4">
@@ -180,7 +145,6 @@ const Login = () => {
                       ? 'border-agritech-green bg-agritech-paleGreen' 
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  disabled={isLoading}
                 >
                   {selectedCategory === 'Farmer' && (
                     <span className="absolute top-2 right-2 text-agritech-green">
@@ -201,7 +165,6 @@ const Login = () => {
                       ? 'border-agritech-green bg-agritech-paleGreen' 
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  disabled={isLoading}
                 >
                   {selectedCategory === 'Investor' && (
                     <span className="absolute top-2 right-2 text-agritech-green">
@@ -217,34 +180,17 @@ const Login = () => {
               {errors.category && <p className="text-red-500 text-xs mt-2 text-center">{errors.category}</p>}
             </div>
             
-            <div className="flex items-center">
-              <input 
-                id="remember-me" 
-                type="checkbox" 
-                className="h-4 w-4 text-agritech-green focus:ring-agritech-green border-gray-300 rounded" 
-                checked={rememberMe} 
-                onChange={() => setRememberMe(!rememberMe)} 
-                disabled={isLoading} 
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">Remember me</label>
-            </div>
+            {errors.auth && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-500 text-sm">{errors.auth}</p>
+              </div>
+            )}
             
             <button
               type="submit"
-              className="w-full bg-agritech-green text-white py-3 px-4 rounded-md hover:bg-agritech-darkGreen focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-agritech-green disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
+              className="w-full bg-agritech-green text-white py-3 px-4 rounded-md hover:bg-agritech-darkGreen focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-agritech-green"
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing In...
-                </span>
-              ) : (
-                'Sign In'
-              )}
+              Sign In
             </button>
           </form>
           
@@ -253,7 +199,8 @@ const Login = () => {
           </p>
         </div>
         
-        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('/lovable-uploads/24600f67-3c2c-4eac-8ddc-cd77bc25260c.png')" }}>
+        {/* Right side - Image and info */}
+        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://plus.unsplash.com/premium_photo-1661808770389-30a3ed35b7fe?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mzd8fGFncmljdWx0dXJlJTIwZmllbGR8ZW58MHx8MHx8fDA%3D')" }}>
           <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/30 to-black/50">
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
               <div className="flex items-center mb-2">
@@ -265,6 +212,7 @@ const Login = () => {
               </div>
               <p className="text-xs text-white/80">Protected with encryption</p>
             </div>
+            
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mt-auto">
               <h3 className="text-xl font-bold text-white mb-2">Welcome to AgriTech</h3>
               <p className="text-white/80">Continue your journey with us</p>
