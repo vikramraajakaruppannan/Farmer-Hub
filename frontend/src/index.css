@@ -103,6 +103,7 @@
 .testimonial-card:hover {
   transform: scale(1.02);
 }
+<<<<<<< HEAD
 
 @keyframes fade-in {
   from {
@@ -117,3 +118,5 @@
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469

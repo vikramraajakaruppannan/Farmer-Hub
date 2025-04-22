@@ -7,7 +7,11 @@ const ResetSuccess = () => {
   const navigate = useNavigate();
 
   return (
+<<<<<<< HEAD
 <div className="min-h-screen flex items-center justify-center p-4"style={{ backgroundColor: '#A6E483' }}>
+=======
+<div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#116530' }}>
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
         {/* Left side - Success message */}
         <div className="p-8 md:p-12 w-full md:w-1/2 flex flex-col items-center text-center">

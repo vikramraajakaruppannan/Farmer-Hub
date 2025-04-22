@@ -1,11 +1,20 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { Scan, Users, BookOpen, Truck, BanknoteIcon } from 'lucide-react';
+=======
+
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
+import { Scan, Users, BookOpen, Truck, Phone, Users2, BanknoteIcon } from 'lucide-react';
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 import { Card, CardContent } from '@/components/ui/card';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
+<<<<<<< HEAD
   const [dashboardData, setDashboardData] = useState(null);
   const navigate = useNavigate();
   
@@ -39,6 +48,16 @@ const Dashboard = () => {
       console.error(err);
     }
   };
+=======
+  
+  useEffect(() => {
+    // Get user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -55,7 +74,13 @@ const Dashboard = () => {
           </div>
         </div>
 
+<<<<<<< HEAD
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+=======
+        {/* Main Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* AI Crop Disease Scanner */}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -78,6 +103,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+<<<<<<< HEAD
+=======
+          {/* Farmer-to-Farmer Exchange */}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -91,7 +120,11 @@ const Dashboard = () => {
                   Trade seeds, fertilizers, and tools with fellow farmers.
                 </p>
                 <Link 
+<<<<<<< HEAD
                   to="/market"
+=======
+                  to="/farmer-exchange"
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
                   className="mt-auto w-full py-2 bg-blue-600 text-white text-center rounded-md hover:bg-blue-700 transition-colors"
                 >
                   Start Trading
@@ -100,6 +133,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+<<<<<<< HEAD
+=======
+          {/* Expert Consultation */}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -113,7 +150,11 @@ const Dashboard = () => {
                   Get expert guidance on farming techniques & crop health.
                 </p>
                 <Link 
+<<<<<<< HEAD
                   to="/expert-connect"
+=======
+                  to="/expert-consultation"
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
                   className="mt-auto w-full py-2 bg-purple-600 text-white text-center rounded-md hover:bg-purple-700 transition-colors"
                 >
                   Ask an Expert
@@ -123,7 +164,13 @@ const Dashboard = () => {
           </Card>
         </div>
 
+<<<<<<< HEAD
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+=======
+        {/* Secondary Features */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Urban-to-Farmer Investment */}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -137,7 +184,11 @@ const Dashboard = () => {
                   Receive direct investment from urban funders & share profits.
                 </p>
                 <Link 
+<<<<<<< HEAD
                   to="/investments"
+=======
+                  to="/investment"
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
                   className="mt-auto w-full py-2 bg-green-600 text-white text-center rounded-md hover:bg-green-700 transition-colors"
                 >
                   Invest Now
@@ -146,6 +197,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+<<<<<<< HEAD
+=======
+          {/* Smart Agricultural Supply Chain */}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col h-full">
@@ -169,7 +224,13 @@ const Dashboard = () => {
           </Card>
         </div>
 
+<<<<<<< HEAD
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+=======
+        {/* Stats and Testimonials */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Live Stats */}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           <Card className="overflow-hidden shadow-md">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Live Stats & Impact</h3>
@@ -190,6 +251,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+<<<<<<< HEAD
+=======
+          {/* Testimonials */}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           <Card className="overflow-hidden shadow-md">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Testimonials</h3>
@@ -207,6 +272,10 @@ const Dashboard = () => {
           </Card>
         </div>
 
+<<<<<<< HEAD
+=======
+        {/* Newsletter Section */}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
         <div className="mt-8">
           <Card className="overflow-hidden shadow-md">
             <CardContent className="p-6">
@@ -231,4 +300,8 @@ const Dashboard = () => {
   );
 };
 
+<<<<<<< HEAD
 export default Dashboard;
+=======
+export default Dashboard;
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469

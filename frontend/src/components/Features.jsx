@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 import React from 'react';
 
 const Feature = ({ icon, title, items }) => {
@@ -22,11 +26,17 @@ const Feature = ({ icon, title, items }) => {
 const Features = () => {
   const features = [
     {
+<<<<<<< HEAD
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
         </svg>
       ),
+=======
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>,
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
       title: "AI-Powered Predictions",
       items: [
         "Accurate crop yield predictions",
@@ -36,11 +46,17 @@ const Features = () => {
       ]
     },
     {
+<<<<<<< HEAD
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
         </svg>
       ),
+=======
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+      </svg>,
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
       title: "Smart Resource Tracking",
       items: [
         "Customized Planning",
@@ -50,11 +66,17 @@ const Features = () => {
       ]
     },
     {
+<<<<<<< HEAD
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
+=======
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>,
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
       title: "Investment Solutions",
       items: [
         "Comprehensive Financial Analysis",
@@ -66,6 +88,7 @@ const Features = () => {
   ];
 
   return (
+<<<<<<< HEAD
     <div id="features-section" className="py-16" style={{ backgroundColor: '#A6E483' }}>
       {/* ✅ This ID is used as the scroll target */}
       <div className="container mx-auto px-4">
@@ -73,6 +96,15 @@ const Features = () => {
         <div className="grid md:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <Feature
+=======
+    <div className="py-16" style={{ backgroundColor: '#116530' }}>
+
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center  text-white mb-12">Our Features</h2>
+        <div className="grid md:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <Feature 
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
               key={index}
               icon={feature.icon}
               title={feature.title}

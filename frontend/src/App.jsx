@@ -11,6 +11,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import VerificationCode from "./pages/VerificationCode";
 import ResetPassword from "./pages/ResetPassword";
 import ResetSuccess from "./pages/ResetSuccess";
+<<<<<<< HEAD
 import Dashboard from "./pages/Dash";
 import DiseaseDetection from "./pages/module1/DiseaseDetection";
 import ScanResults from "./pages/module1/ScanResults";
@@ -33,6 +34,14 @@ import OrderConfirmation from "./pages/module2/OrderConfirmation";
 import TrackOrders from "./pages/module2/TrackOrders";
 import ManageProducts from "./pages/module2/ManageProducts";
 
+=======
+import Dashboard from "./pages/Dashboard";
+import DiseaseDetection from "./pages/DiseaseDetection";
+import ScanResults from "./pages/ScanResults";
+import Feedback from "./pages/Feedback";
+import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 
 const queryClient = new QueryClient();
 
@@ -50,12 +59,16 @@ const App = () => (
           <Route path="/verification-code" element={<VerificationCode />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/reset-success" element={<ResetSuccess />} />
+<<<<<<< HEAD
           <Route path="/invest" element={<Invest />} />
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/disease-detection" element={<DiseaseDetection />} />
           <Route path="/scan-results" element={<ScanResults />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/profile" element={<Profile />} />
+<<<<<<< HEAD
           <Route path="/ai-crop-disease-prediction" element={<AICropDiseasePrediction />} />
           <Route path="/farmer-exchange-network" element={<FarmerExchangeNetwork />} />
           <Route path="/expert-consultation-platform" element={<ExpertConsultationPlatform />} />
@@ -72,6 +85,8 @@ const App = () => (
           <Route path="/track-orders" element={<TrackOrders />} />
           <Route path="/manage-products" element={<ManageProducts />} />
           
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -35,7 +35,11 @@ const ForgotPassword = () => {
   };
 
   return (
+<<<<<<< HEAD
 <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#A6E483' }}>
+=======
+<div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#116530' }}>
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
         <div className="p-8 md:p-12 w-full md:w-1/2">
         <Link to="/Login" className="flex items-center text-sm text-agritech-green hover:underline mb-4">
@@ -66,7 +70,17 @@ const ForgotPassword = () => {
               />
             </div>
             
+<<<<<<< HEAD
             
+=======
+            <div className="rounded-md p-4 bg-amber-50 flex items-start">
+              <Info className="flex-shrink-0 h-5 w-5 text-amber-700 mt-0.5" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-amber-800">Important Note</h3>
+                <p className="mt-1 text-sm text-amber-700">For this demo, check the backend console for your reset code.</p>
+              </div>
+            </div>
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
             
             <button
               type="submit"

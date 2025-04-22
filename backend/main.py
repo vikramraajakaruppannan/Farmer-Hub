@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 from fastapi import FastAPI, HTTPException, Depends, Request, UploadFile, File, Header
+=======
+from fastapi import FastAPI, HTTPException
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 from pydantic import BaseModel
 from supabase import create_client, Client
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +13,7 @@ import string
 import smtplib
 from email.mime.text import MIMEText
 import logging
+<<<<<<< HEAD
 import uuid
 from fastapi.security import OAuth2PasswordBearer
 from typing import Dict, Optional, List
@@ -16,6 +21,8 @@ from datetime import datetime, date
 from bs4 import BeautifulSoup
 import requests
 import module1  
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,6 +49,7 @@ SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_TIMEOUT = 15
 
+<<<<<<< HEAD
 sessions: Dict[str, dict] = {}  # In-memory session store
 reset_codes = {}
 
@@ -55,6 +63,16 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     session_id: str
+=======
+reset_codes = {}
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
     first_name: str
     last_name: str
     email: str
@@ -64,8 +82,11 @@ class SignupRequest(BaseModel):
     password: str
     first_name: str
     last_name: str
+<<<<<<< HEAD
     mobile: str
     category: str
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 
 class SignupResponse(BaseModel):
     message: str
@@ -83,6 +104,7 @@ class ResetPasswordRequest(BaseModel):
     code: str
     new_password: str
 
+<<<<<<< HEAD
 class LogoutRequest(BaseModel):
     session_id: str
 
@@ -108,6 +130,8 @@ class UserResponse(BaseModel):
     photo_url: Optional[str] = None
 
 # Utility Functions
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 def send_reset_email(email: str, code: str) -> bool:
     if not SMTP_USER or not SMTP_PASSWORD:
         logger.warning("SMTP credentials not configured, falling back to console")
@@ -131,6 +155,7 @@ def send_reset_email(email: str, code: str) -> bool:
         print(f"Reset code for {email}: {code}")
         return False
 
+<<<<<<< HEAD
 async def get_current_session(request: Request):
     session_id = request.headers.get("X-Session-ID")
     if not session_id or session_id not in sessions:
@@ -138,13 +163,25 @@ async def get_current_session(request: Request):
     return sessions[session_id]
 
 # Endpoints
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 @app.post("/signup", response_model=SignupResponse)
 async def signup(signup_data: SignupRequest):
     try:
         logger.info(f"Attempting signup for {signup_data.email}")
         auth_response = supabase.auth.sign_up({
             "email": signup_data.email,
+<<<<<<< HEAD
             "password": signup_data.password
+=======
+            "password": signup_data.password,
+            "options": {
+                "data": {
+                    "first_name": signup_data.first_name,
+                    "last_name": signup_data.last_name
+                }
+            }
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
         })
 
         if auth_response.user is None:
@@ -155,9 +192,13 @@ async def signup(signup_data: SignupRequest):
             "id": auth_response.user.id,
             "email": signup_data.email,
             "first_name": signup_data.first_name,
+<<<<<<< HEAD
             "last_name": signup_data.last_name,
             "mobile": signup_data.mobile,
             "category": signup_data.category
+=======
+            "last_name": signup_data.last_name
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
         }
 
         profile_response = supabase.table("profiles").insert(user_data).execute()
@@ -192,6 +233,7 @@ async def login(login_data: LoginRequest):
             logger.error(f"Login failed for {login_data.email}: No user returned from Supabase")
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
+<<<<<<< HEAD
         user_id = auth_response.user.id
         profile_response = supabase.table("profiles").select("*").eq("id", user_id).single().execute()
 
@@ -218,6 +260,19 @@ async def login(login_data: LoginRequest):
 
         return LoginResponse(
             session_id=session_id,
+=======
+        profile_response = supabase.table("profiles").select("*").eq("id", auth_response.user.id).single().execute()
+
+        if not profile_response.data:
+            logger.error(f"Profile not found for user ID {auth_response.user.id}")
+            raise HTTPException(status_code=404, detail="User profile not found")
+
+        profile = profile_response.data
+        logger.info(f"Login successful for {login_data.email}")
+
+        return LoginResponse(
+            access_token=auth_response.session.access_token,
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
             first_name=profile["first_name"],
             last_name=profile["last_name"],
             email=profile["email"]
@@ -229,6 +284,7 @@ async def login(login_data: LoginRequest):
             raise HTTPException(status_code=401, detail="Invalid email or password")
         raise HTTPException(status_code=500, detail=f"Login error: {error_message}")
 
+<<<<<<< HEAD
 @app.post("/logout")
 async def logout(logout_data: LogoutRequest):
     try:
@@ -242,6 +298,8 @@ async def logout(logout_data: LogoutRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Logout error: {str(e)}")
 
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 @app.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
     try:
@@ -301,11 +359,14 @@ async def reset_password(request: ResetPasswordRequest):
             {"password": request.new_password}
         )
 
+<<<<<<< HEAD
         for session_id, session_data in list(sessions.items()):
             if session_data["email"] == request.email:
                 del sessions[session_id]
                 logger.info(f"Invalidated session {session_id} for {request.email} after password reset")
 
+=======
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
         del reset_codes[request.email]
 
         return {"message": "Password reset successfully"}
@@ -317,6 +378,7 @@ async def reset_password(request: ResetPasswordRequest):
             raise HTTPException(status_code=403, detail="Admin access denied. Ensure SUPABASE_KEY is a service role key.")
         raise HTTPException(status_code=500, detail=f"Error: {error_message}")
 
+<<<<<<< HEAD
 @app.get("/dashboard", dependencies=[Depends(get_current_session)])
 async def get_dashboard(session: dict = Depends(get_current_session)):
     profile = supabase.table("profiles").select("*").eq("id", session["user_id"]).single().execute()
@@ -714,6 +776,11 @@ async def submit_feedback(
     except Exception as e:
         logger.error(f"Feedback error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error submitting feedback: {str(e)}")    
+=======
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
 
 if __name__ == "__main__":
     import uvicorn

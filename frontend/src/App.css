@@ -44,6 +44,7 @@
 
 .login-bg {
   background-color: #116530;
+<<<<<<< HEAD
 }
 
 @keyframes scroll {
@@ -58,3 +59,6 @@
 .animate-scroll {
   animation: scroll 40s linear infinite;
 }
+=======
+}
+>>>>>>> 6f70c0b46be476d725c023c2c823c7edde59d469
