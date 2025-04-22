@@ -280,16 +280,7 @@ const Dashboard = () => {
   // Count pending notifications
   const pendingCount = notifications.filter((notif) => notif.status === 'pending').length;
 
-  // Handle language change
-  const handleLanguageChange = (language) => {
-    setSelectedLanguage(language);
-    setIsLanguageOpen(false);
-    toast({
-      title: 'Language Changed',
-      description: `Switched to ${language}`,
-    });
-    // TODO: Implement actual language change logic (e.g., i18n integration)
-  };
+  
 
   // Handle download with error checking
   const handleDownload = async (fileName) => {
@@ -320,40 +311,7 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">AgriTech Platform</h1>
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Language Selector */}
-            <div className="relative" ref={languageRef}>
-              <button
-                onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className="flex items-center p-2 rounded-md hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-agritech-green"
-                aria-label="Select language"
-                role="combobox"
-                aria-expanded={isLanguageOpen}
-              >
-                <Globe className="h-5 w-5 text-gray-600 mr-1" />
-                <span className="text-sm text-gray-700">{selectedLanguage}</span>
-                <span className="ml-1 text-gray-500">▼</span>
-              </button>
-              {isLanguageOpen && (
-                <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-xl z-10 animate-fade-in">
-                  <button
-                    onClick={() => handleLanguageChange('English')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    role="option"
-                    aria-selected={selectedLanguage === 'English'}
-                  >
-                    English
-                  </button>
-                  <button
-                    onClick={() => handleLanguageChange('Tamil')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    role="option"
-                    aria-selected={selectedLanguage === 'Tamil'}
-                  >
-                    Tamil
-                  </button>
-                </div>
-              )}
-            </div>
+           
 
             {/* Notification Button */}
             <div className="relative" ref={notificationRef}>

@@ -63,7 +63,7 @@ const ForgotPassword = () => {
               <Info className="flex-shrink-0 h-5 w-5 text-amber-700 mt-0.5" />
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-amber-800">Important Note</h3>
-                <p className="mt-1 text-sm text-amber-700">For this demo, check the backend console for your reset code.</p>
+                <p className="mt-1 text-sm text-amber-700">Remember to enter your email correctly for the password reset process.</p>
               </div>
             </div>
             
@@ -81,7 +81,7 @@ const ForgotPassword = () => {
           </p>
         </div>
         
-        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('/lovable-uploads/5e64048c-5375-4c9a-a8ad-8946ea4c79ef.png')" }}>
+        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1591268315196-2c9b815d71cd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NzJ8fGFncmljdWx0dXJlfGVufDB8fDB8fHww')" }}>
           <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/30 to-black/50">
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
               <div className="flex items-center mb-2">

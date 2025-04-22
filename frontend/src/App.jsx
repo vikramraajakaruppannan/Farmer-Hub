@@ -5,6 +5,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import AICropDiseasePrediction from "./pages/AICropDiseasePrediction.jsx";
+import FarmerExchangeNetwork from "./pages/FarmerExchangeNetwork";
+import ExpertConsultationPlatform from "./pages/ExpertConsultationPlatform";
+import UrbanToFarmerInvestment from "./pages/UrbanToFarmerInvestment";
+import SupplyChainBulkBuyers from "./pages/SupplyChainBulkBuyers";
+import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
+import TermsAndConditions from "./pages/TermsAndConditions.jsx";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -43,6 +50,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+
+          {/* Public Routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -50,12 +59,22 @@ const App = () => (
           <Route path="/verification-code" element={<VerificationCode />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/reset-success" element={<ResetSuccess />} />
-          <Route path="/invest" element={<Invest />} />
+          <Route path="/ai-crop-disease-prediction" element={<AICropDiseasePrediction />} />
+          <Route path="/farmer-exchange-network" element={<FarmerExchangeNetwork />} />
+          <Route path="/expert-consultation-platform" element={<ExpertConsultationPlatform />} />
+          <Route path="/urban-to-farmer-investment" element={<UrbanToFarmerInvestment />} />
+          <Route path="/Supply-Chain-Bulk-Buyers" element={<SupplyChainBulkBuyers />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+
+          {/* Dashboard and Profile Route */}
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/disease-detection" element={<DiseaseDetection />} />
-          <Route path="/scan-results" element={<ScanResults />} />
-          <Route path="/feedback" element={<Feedback />} />
           <Route path="/profile" element={<Profile />} />
+
+          {/* Disease Detection Routes */}
+          <Route path="/disease-detection" element={<DiseaseDetection />} />
+          <Route path="/scan-results" element={<ScanResults />} />  
+          <Route path="/feedback" element={<Feedback />} />
 
           {/* Market & Sales Routes */}
           <Route path="/market-home" element={<MarketHome />} />
@@ -72,6 +91,10 @@ const App = () => (
           <Route path="/expert-notifications" element={<ExpertNotifications />} />
           <Route path="/consultation-request/:requestId" element={<ExpertRequestAction />} />
           <Route path="/expert/approve-decline/:token" element={<ExpertApproveDecline />} />
+
+          {/*Invester Routes */}
+          <Route path="/invest" element={<Invest />} />
+
 
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

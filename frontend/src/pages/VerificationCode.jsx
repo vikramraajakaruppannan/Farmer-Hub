@@ -216,7 +216,7 @@ const VerificationCode = () => {
           </div>
         </div>
         
-        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('/lovable-uploads/374e3d74-5335-414d-9b9b-1254181711ec.png')" }}>
+        <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1698061641625-ff9728f16b6a?w=600&auto=format&fit=crop&q=60')" }}>
           <div className="h-full flex flex-col justify-between p-12 bg-gradient-to-b from-black/30 to-black/50">
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 self-end">
               <div className="flex items-center mb-2">
