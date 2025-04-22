@@ -11,7 +11,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import VerificationCode from "./pages/VerificationCode";
 import ResetPassword from "./pages/ResetPassword";
 import ResetSuccess from "./pages/ResetSuccess";
-import Dashboard from "./pages/Dash";
+import Dashboard from "./pages/Dashboard";
 import DiseaseDetection from "./pages/module1/DiseaseDetection";
 import ScanResults from "./pages/module1/ScanResults";
 import Feedback from "./pages/module1/Feedback";
@@ -26,6 +26,12 @@ import Billing from "./pages/module2/Billing";
 import OrderConfirmation from "./pages/module2/OrderConfirmation";
 import TrackOrders from "./pages/module2/TrackOrders";
 import ManageProducts from "./pages/module2/ManageProducts";
+
+import ExpertConsultation from "./pages/module3/ExpertConsultation";
+import ExpertNotifications from "./pages/module3/ExpertNotifications";
+import ExpertRequestAction from "./pages/module3/ExpertRequestAction";
+import ExpertApproveDecline from './pages/module3/ExpertApproveDecline';
+
 
 
 const queryClient = new QueryClient();
@@ -60,7 +66,14 @@ const App = () => (
           <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
           <Route path="/track-orders" element={<TrackOrders />} />
           <Route path="/manage-products" element={<ManageProducts />} />
-          
+
+          {/* Expert Consultation Routes */}
+          <Route path="/expert-consultation" element={<ExpertConsultation />} />
+          <Route path="/expert-notifications" element={<ExpertNotifications />} />
+          <Route path="/consultation-request/:requestId" element={<ExpertRequestAction />} />
+          <Route path="/expert/approve-decline/:token" element={<ExpertApproveDecline />} />
+
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

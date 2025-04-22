@@ -526,6 +526,52 @@ async def upload_profile_photo(file: UploadFile = File(...), session: dict = Dep
     except Exception as e:
         logger.error(f"Error uploading photo for {session['email']}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error uploading photo: {str(e)}")
+    
+@app.delete("/user/photo", dependencies=[Depends(get_current_session)])
+async def delete_profile_photo(session: dict = Depends(get_current_session)):
+    try:
+        # Fetch farmer details to get the current photo URL
+        farmer_details = supabase.table("farmer_details").select("photo_url").eq("user_id", session["user_id"]).execute()
+        if not farmer_details.data or not farmer_details.data[0]["photo_url"]:
+            logger.info(f"No photo found to delete for {session['email']}")
+            raise HTTPException(status_code=404, detail="No profile photo found")
+
+        photo_url = farmer_details.data[0]["photo_url"]
+        # Extract file path from public URL
+        file_path = photo_url.split("profile-photos/")[-1].lstrip("public/")
+        logger.info(f"Attempting to delete photo for {session['email']}: {file_path}")
+
+        # Verify file exists
+        files = supabase.storage.from_("profile-photos").list(session["user_id"])
+        file_exists = any(f['name'] == file_path.split('/')[-1] for f in files)
+        if not file_exists:
+            logger.warning(f"File not found in storage for {session['email']}: {file_path}")
+            # Proceed to update database to avoid inconsistency
+        else:
+            # Delete the photo from Supabase Storage
+            storage_response = supabase.storage.from_("profile-photos").remove([file_path])
+            logger.info(f"Storage response: {storage_response}")
+            if not storage_response:
+                logger.error(f"Failed to delete photo for {session['email']}: {file_path}")
+                raise HTTPException(status_code=500, detail="Failed to delete photo from storage")
+
+        # Update farmer_details to remove photo_url
+        update_response = supabase.table("farmer_details").update({
+            "photo_url": None,
+            "updated_at": datetime.utcnow().isoformat()
+        }).eq("user_id", session["user_id"]).execute()
+
+        if not update_response.data:
+            logger.error(f"Failed to update farmer_details for {session['email']} after photo deletion")
+            raise HTTPException(status_code=500, detail="Failed to update profile after photo deletion")
+
+        logger.info(f"Profile photo deleted successfully for {session['email']}")
+        return {"message": "Profile photo deleted successfully"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error deleting photo for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting photo: {str(e)}")
 
 DAILY_TIPS = [
     "Check soil moisture levels daily for optimal crop health and water conservation.",
