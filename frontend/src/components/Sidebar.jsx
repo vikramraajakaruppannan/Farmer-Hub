@@ -71,11 +71,11 @@ const Sidebar = () => {
   };
 
   const navLinks = [
-    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
     { to: '/disease-detection', label: 'Disease Detection', icon: Microscope },
     { to: '/market-home', label: 'Market & Sales', icon: ShoppingBasket },
     { to: '/expert-consultation', label: 'Expert Connect', icon: Phone },
-    { to: '/community', label: 'Farmer Community', icon: Users },
+    { to: '/farmer-requests', label: 'Farmer Community', icon: Users },
     { to: '/investments', label: 'Investments & Loans', icon: BanknoteIcon },
   ];
 

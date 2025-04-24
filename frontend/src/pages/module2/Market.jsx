@@ -66,6 +66,7 @@ const Market = () => {
   };
 
   const handleItemClick = (itemId) => {
+    console.log('Navigating to product with ID:', itemId);
     if (!itemId) {
       toast({
         title: 'Error',
@@ -75,7 +76,7 @@ const Market = () => {
       return;
     }
     navigate(`/product/${itemId}`);
-  };
+  };  
 
   const handleAddToCart = (product) => {
     if (!product.id) {

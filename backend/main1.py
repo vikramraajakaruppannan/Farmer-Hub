@@ -1536,6 +1536,469 @@ async def delete_notification(notification_id: UUID, session: dict = Depends(get
         raise HTTPException(status_code=500, detail=f"Error deleting notification: {str(e)}")
 
 
+
+
+otp_codes: Dict[str, str] = {}
+
+# Models
+class LoginResponseBuyer(BaseModel):
+    session_id: str
+    first_name: str
+    phoneNumber: int  # Changed to str to match phone number format
+    email: str
+    profile_complete: Optional[bool] = None
+
+class LoginOtpRequest(BaseModel):
+    email: str
+
+class VerifyOtpRequest(BaseModel):
+    email: str
+    otp: str
+
+class WantedProduct(BaseModel):
+    product_name: str
+    category: str
+    quantity: float
+    unit: str
+    notes: Optional[str] = None
+    deliveryLocation: Optional[str] = None
+    requiredDateTime: Optional[str] = None
+
+class WantedProductResponse(BaseModel):
+    id: str
+    product_name: str
+    category: str
+    quantity: float
+    unit: str
+    notes: Optional[str] = None
+    created_at: str
+    updated_at: str
+    deliveryLocation: Optional[str] = None
+    requiredDateTime: Optional[str] = None
+
+class CompleteProfileRequest(BaseModel):
+    full_name: str
+    location: str
+    email: str
+    phoneNumber: str
+
+class CompleteProfileResponse(BaseModel):
+    message: str
+    first_name: str
+    phoneNumber: str
+    email: str
+    location: str
+
+# Helper function for sending OTP email
+def send_otp_email(email: str, code: str) -> bool:
+    if not SMTP_USER or not SMTP_PASSWORD:
+        logger.warning("SMTP credentials not configured, falling back to console")
+        print(f"OTP for {email}: {code}")
+        return False
+
+    try:
+        msg = MIMEText(f"Your AgriTech login OTP is: {code}\n\nThis code expires in 10 minutes.")
+        msg['Subject'] = "AgriTech Login OTP"
+        msg['From'] = SMTP_USER
+        msg['To'] = email
+
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=SMTP_TIMEOUT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+        logger.info(f"Successfully sent OTP to {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send OTP to {email}: {str(e)}")
+        print(f"OTP for {email}: {code}")
+        return False
+
+# Dependency for session validation
+async def get_current_session(x_session_id: Optional[str] = Header(None)):
+    if not x_session_id or x_session_id not in sessions:
+        raise HTTPException(status_code=401, detail="Invalid or missing session ID")
+    return sessions[x_session_id]
+
+# Endpoints
+@app.post("/login-otp")
+async def login_otp(request: LoginOtpRequest):
+    try:
+        users = supabase.auth.admin.list_users()
+        user = next((u for u in users if u.email == request.email), None)
+        if not user:
+            logger.warning(f"Email not found: {request.email}")
+            raise HTTPException(status_code=404, detail="Email not found")
+
+        code = ''.join(random.choices(string.digits, k=6))
+        otp_codes[request.email] = code
+
+        email_sent = send_otp_email(request.email, code)
+        logger.info(f"OTP request processed for {request.email}, email sent: {email_sent}")
+        return {
+            "message": "OTP sent to your email" if email_sent else "OTP generated (check console)"
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"OTP login error for {request.email}: {str(e)}")
+        error_detail = str(e) if str(e) else "Unknown error during OTP generation"
+        raise HTTPException(status_code=500, detail=f"Error processing OTP request: {error_detail}")
+
+@app.post("/verify-otp", response_model=LoginResponseBuyer)
+async def verify_otp(request: VerifyOtpRequest):
+    try:
+        stored_code = otp_codes.get(request.email)
+        if not stored_code or stored_code != request.otp:
+            logger.warning(f"Invalid or expired OTP for {request.email}")
+            raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
+        users_response = supabase.auth.admin.list_users()
+        logger.info(f"Fetched {len(users_response)} users from Supabase")
+        user = next((u for u in users_response if u.email == request.email), None)
+        if not user:
+            logger.error(f"User not found for email: {request.email}")
+            raise HTTPException(status_code=404, detail="User not found")
+
+        buyer_response = supabase.table("buyers").select("first_name, phoneNumber, location").eq("id", user.id).execute()
+        logger.info(f"Buyer profile query response: {buyer_response.data}")
+        profile_data = buyer_response.data[0] if buyer_response.data else {
+            "first_name": "",
+            "location": "",
+            "phoneNumber": "",
+        }
+        profile_data["email"] = request.email
+
+        session_id = str(uuid.uuid4())
+        sessions[session_id] = {
+            "user_id": user.id,
+            "email": request.email
+        }
+        logger.info(f"Session created for {request.email}, session ID: {session_id}")
+
+        if request.email in otp_codes:
+            del otp_codes[request.email]
+
+        return LoginResponseBuyer(
+            session_id=session_id,
+            first_name=profile_data["first_name"],
+            phoneNumber=profile_data["phoneNumber"],
+            email=profile_data["email"],
+            profile_complete=bool(profile_data["first_name"] and profile_data["location"])
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"OTP verification error for {request.email}: {str(e)}")
+        error_detail = str(e) if str(e) else "Unknown error during OTP verification"
+        raise HTTPException(status_code=500, detail=f"Error verifying OTP: {error_detail}")
+
+@app.post("/wanted-products", response_model=WantedProductResponse)
+async def add_wanted_product(product: WantedProduct, session: dict = Depends(get_current_session)):
+    try:
+        if product.quantity <= 0:
+            raise HTTPException(status_code=400, detail="Quantity must be positive")
+        if len(product.product_name) > 100:
+            raise HTTPException(status_code=400, detail="Product name must be under 100 characters")
+        if product.notes and len(product.notes) > 500:
+            raise HTTPException(status_code=400, detail="Notes must be under 500 characters")
+        valid_categories = ["Vegetables", "Fruits", "Paddy"]
+        valid_units = ["kg", "g", "L", "pcs"]
+        if product.category not in valid_categories:
+            raise HTTPException(status_code=400, detail="Invalid category")
+        if product.unit not in valid_units:
+            raise HTTPException(status_code=400, detail="Invalid unit")
+
+        product_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": session["user_id"],
+            "product_name": product.product_name,
+            "category": product.category,
+            "quantity": product.quantity,
+            "unit": product.unit,
+            "notes": product.notes,
+            "deliveryLocation": product.deliveryLocation,
+            "requiredDateTime": product.requiredDateTime,
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        response = supabase.table("user_wanted_products").insert(product_data).execute()
+        if not response.data:
+            raise HTTPException(status_code=500, detail="Failed to add wanted product")
+
+        logger.info(f"Wanted product added by {session['email']}: {product_data['product_name']}")
+        return response.data[0]
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error adding wanted product for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error adding wanted product")
+
+@app.get("/wanted-products", response_model=List[WantedProductResponse])
+async def get_wanted_products(session: dict = Depends(get_current_session)):
+    try:
+        response = supabase.table("user_wanted_products").select("*").eq("user_id", session["user_id"]).execute()
+        logger.info(f"Fetched {len(response.data)} wanted products for {session['email']}")
+        return response.data
+    except Exception as e:
+        logger.error(f"Error fetching wanted products for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching wanted products")
+
+@app.delete("/wanted-products/{product_id}")
+async def delete_wanted_product(product_id: str, session: dict = Depends(get_current_session)):
+    try:
+        try:
+            uuid.UUID(product_id)
+        except ValueError:
+            logger.error(f"Invalid product_id format: {product_id}")
+            raise HTTPException(status_code=400, detail="Invalid product ID format")
+
+        response = supabase.table("user_wanted_products").delete().eq("id", product_id).eq("user_id", session["user_id"]).execute()
+        if not response.data:
+            logger.error(f"Wanted product not found: {product_id}")
+            raise HTTPException(status_code=404, detail="Wanted product not found")
+
+        logger.info(f"Wanted product {product_id} deleted by {session['email']}")
+        return {"message": "Wanted product deleted successfully"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error deleting wanted product {product_id} for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting wanted product")
+
+@app.post("/complete-profile", response_model=CompleteProfileResponse)
+async def complete_profile(request: CompleteProfileRequest, session: dict = Depends(get_current_session)):
+    try:
+        logger.info(f"Completing profile for email: {request.email}")
+
+        if not request.full_name or len(request.full_name.strip()) < 2:
+            logger.warning(f"Invalid full_name for {request.email}: {request.full_name}")
+            raise HTTPException(status_code=400, detail="Full name is required and must be at least 2 characters")
+        if not request.location or len(request.location.strip()) < 2:
+            logger.warning(f"Invalid location for {request.email}: {request.location}")
+            raise HTTPException(status_code=400, detail="Location is required and must be at least 2 characters")
+        if request.email != session["email"]:
+            logger.warning(f"Email mismatch for session {session['email']}: provided {request.email}")
+            raise HTTPException(status_code=400, detail="Email does not match session")
+
+        logger.info(f"Session data: {session}")
+
+        buyer_response = supabase.table("buyers").select("*").eq("id", session["user_id"]).execute()
+        logger.info(f"Buyer query response: {buyer_response.data}")
+
+        buyer_data = {
+            "id": session["user_id"],
+            "email": request.email,
+            "first_name": request.full_name,
+            "phoneNumber": request.phoneNumber,
+            "location": request.location.strip(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+
+        if buyer_response.data and len(buyer_response.data) > 0:
+            update_response = supabase.table("buyers").update({
+                "first_name": request.full_name,
+                "phoneNumber": request.phoneNumber,
+                "location": request.location.strip(),
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", session["user_id"]).execute()
+            if not update_response.data:
+                logger.error(f"Failed to update buyer record for user ID {session['user_id']}")
+                raise HTTPException(status_code=500, detail="Failed to update buyer profile")
+        else:
+            insert_response = supabase.table("buyers").insert(buyer_data).execute()
+            if not insert_response.data:
+                logger.error(f"Failed to insert buyer record for user ID {session['user_id']}")
+                raise HTTPException(status_code=500, detail="Failed to create buyer profile")
+
+        logger.info(f"Buyer profile completed successfully for {request.email}")
+        return CompleteProfileResponse(
+            message="Profile completed successfully",
+            first_name=request.full_name,
+            phoneNumber=request.phoneNumber,
+            email=request.email,
+            location=request.location
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error completing profile for {request.email}: {str(e)}")
+        error_detail = str(e) if str(e) else "Unknown error during profile completion"
+        raise HTTPException(status_code=500, detail=f"Error completing profile: {error_detail}")
+    
+
+@app.get("/farmer/wanted-products")
+async def get_wanted_products(session: dict = Depends(get_current_session)):
+    try:
+        profile = supabase.table("profiles").select("category").eq("id", session["user_id"]).single().execute()
+        if not profile.data or profile.data["category"] != "Farmer":
+            logger.error(f"User {session['email']} is not a farmer")
+            raise HTTPException(status_code=403, detail="Access denied: Farmers only")
+
+        # Fetch wanted products, excluding ignored requests
+        response = supabase.table("user_wanted_products").select("*, buyers(first_name, email, phoneNumber, location)").execute()
+        if not response.data:
+            logger.info(f"No wanted products found for {session['email']}")
+            return []
+
+        # Filter out ignored requests
+        ignored = supabase.table("ignored_requests").select("wanted_product_id").eq("farmer_id", session["user_id"]).execute()
+        ignored_ids = [item["wanted_product_id"] for item in ignored.data]
+        filtered_data = [item for item in response.data if item["id"] not in ignored_ids]
+
+        logger.info(f"Fetched {len(filtered_data)} wanted products for {session['email']}")
+        return filtered_data
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error fetching wanted products for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching wanted products: {str(e)}")
+
+
+# Existing /farmer/accept-request/{product_id} endpoint (unchanged, included for completeness)
+class AcceptRequest(BaseModel):
+    farmer_contact: str
+
+@app.post("/farmer/accept-request/{product_id}")
+async def accept_request(product_id: str, request: AcceptRequest, session: dict = Depends(get_current_session)):
+    try:
+        logger.info(f"Processing accept request for product_id: {product_id}, user: {session['email']}, contact: {request.farmer_contact}")
+        # Validate farmer profile
+        profile = supabase.table("profiles").select("category").eq("id", session["user_id"]).single().execute()
+        if not profile.data or profile.data["category"] != "Farmer":
+            logger.error(f"User {session['email']} is not a farmer")
+            raise HTTPException(status_code=403, detail="Access denied: Farmers only")
+
+        # Check if request exists
+        wanted_product = supabase.table("user_wanted_products").select("user_id").eq("id", product_id).single().execute()
+        if not wanted_product.data:
+            logger.error(f"Request {product_id} not found")
+            raise HTTPException(status_code=404, detail="Request not found")
+
+        # Check if request is already completed
+        completed = supabase.table("accepted_requests").select("id").eq("wanted_product_id", product_id).eq("status", "Completed").execute()
+        if completed.data:
+            logger.warning(f"Request {product_id} is already completed")
+            raise HTTPException(status_code=400, detail="Request is already completed")
+
+        # Check for existing acceptance by this farmer
+        existing = supabase.table("accepted_requests").select("id").eq("wanted_product_id", product_id).eq("farmer_id", session["user_id"]).execute()
+        if existing.data:
+            logger.warning(f"Request {product_id} already accepted by {session['email']}")
+            raise HTTPException(status_code=400, detail="Request already accepted by you")
+
+        # Insert accepted request
+        response = supabase.table("accepted_requests").insert({
+            "id": str(uuid.uuid4()),
+            "wanted_product_id": product_id,
+            "farmer_id": session["user_id"],
+            "buyer_id": wanted_product.data["user_id"],
+            "farmer_contact": request.farmer_contact,
+            "created_at": datetime.utcnow().isoformat(),
+            "status": "Pending"
+        }).execute()
+        logger.debug(f"Insert response: {response.data}")
+
+        logger.info(f"Request {product_id} accepted by farmer {session['email']}")
+        return {"message": "Request accepted successfully"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error accepting request {product_id} for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error accepting request: {str(e)}")
+    
+@app.get("/buyer/accepted-requests")
+async def get_accepted_requests(session: dict = Depends(get_current_session)):
+    try:
+        logger.info(f"Fetching accepted requests for buyer: {session['email']}")
+        requests = supabase.table("accepted_requests").select(
+            "id, wanted_product_id, farmer_id, farmer_contact, created_at, status, user_wanted_products!inner(product_name, quantity, unit, deliveryLocation, requiredDateTime), profiles!farmer_id(first_name, email)"
+        ).eq("buyer_id", session["user_id"]).neq("status", "Completed").execute()
+        logger.debug(f"Accepted requests query result: {requests.data}")
+        return [
+            {
+                "request_id": req["id"],
+                "product_id": req["wanted_product_id"],
+                "product_name": req["user_wanted_products"]["product_name"],
+                "quantity": req["user_wanted_products"]["quantity"],
+                "unit": req["user_wanted_products"]["unit"],
+                "location": req["user_wanted_products"]["deliveryLocation"],
+                "deadline": req["user_wanted_products"]["requiredDateTime"],
+                "farmer_name": req["profiles"]["first_name"],
+                "farmer_email": req["profiles"]["email"],
+                "farmer_contact": req["farmer_contact"],
+                "status": req["status"],
+            }
+            for req in requests.data
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching accepted requests for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching accepted requests: {str(e)}")
+    
+    
+@app.post("/buyer/mark-request-completed/{request_id}")
+async def mark_request_completed(request_id: str, session: dict = Depends(get_current_session)):
+    try:
+        logger.info(f"Marking request {request_id} as completed for buyer: {session['email']}")
+        # Verify request exists and belongs to buyer
+        request = supabase.table("accepted_requests").select("buyer_id, status, wanted_product_id").eq("id", request_id).single().execute()
+        if not request.data:
+            logger.error(f"Request {request_id} not found")
+            raise HTTPException(status_code=404, detail="Request not found")
+        if request.data["buyer_id"] != session["user_id"]:
+            logger.error(f"Buyer {session['email']} not authorized for request {request_id}")
+            raise HTTPException(status_code=403, detail="Not authorized")
+        if request.data["status"] == "Completed":
+            logger.warning(f"Request {request_id} already completed")
+            raise HTTPException(status_code=400, detail="Request already completed")
+
+        # Update status to Completed
+        response = supabase.table("accepted_requests").update({
+            "status": "Completed",
+            "updated_at": datetime.utcnow().isoformat()
+        }).eq("id", request_id).execute()
+        logger.debug(f"Update response: {response.data}")
+
+        # Delete the wanted product
+        product_id = request.data["wanted_product_id"]
+        delete_response = supabase.table("user_wanted_products").delete().eq("id", product_id).eq("user_id", session["user_id"]).execute()
+        logger.debug(f"Delete wanted product response: {delete_response.data}")
+
+        logger.info(f"Request {request_id} marked as completed and product {product_id} deleted by buyer {session['email']}")
+        return {"message": "Request marked as completed and product removed"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error marking request {request_id} as completed for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error marking request as completed: {str(e)}")
+    
+@app.post("/buyer/reject-request/{request_id}")
+async def reject_request(request_id: str, session: dict = Depends(get_current_session)):
+    try:
+        logger.info(f"Rejecting request {request_id} for buyer: {session['email']}")
+        # Verify request exists and belongs to buyer
+        request = supabase.table("accepted_requests").select("buyer_id, status").eq("id", request_id).single().execute()
+        if not request.data:
+            logger.error(f"Request {request_id} not found")
+            raise HTTPException(status_code=404, detail="Request not found")
+        if request.data["buyer_id"] != session["user_id"]:
+            logger.error(f"Buyer {session['email']} not authorized for request {request_id}")
+            raise HTTPException(status_code=403, detail="Not authorized")
+        if request.data["status"] == "Completed":
+            logger.warning(f"Request {request_id} is already completed")
+            raise HTTPException(status_code=400, detail="Cannot reject a completed request")
+
+        # Delete the accepted request
+        response = supabase.table("accepted_requests").delete().eq("id", request_id).execute()
+        logger.debug(f"Delete response: {response.data}")
+
+        logger.info(f"Request {request_id} rejected by buyer {session['email']}")
+        return {"message": "Request rejected successfully"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error rejecting request {request_id} for {session['email']}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error rejecting request: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

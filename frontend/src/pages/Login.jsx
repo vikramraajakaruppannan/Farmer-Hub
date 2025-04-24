@@ -278,6 +278,9 @@ const Login = () => {
           <p className="mt-6 text-center text-sm text-gray-600">
             Don't have an account? <Link to="/signup" className="text-agritech-green font-medium hover:underline">Sign up</Link>
           </p>
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Are you a buyer who is looking for bulk products? <Link to="/buyer/login" className="text-agritech-green font-medium hover:underline">Hop in</Link>
+          </p>
         </div>
         
         <div className="hidden md:block w-1/2 bg-cover bg-center" style={{ backgroundImage: "url('https://plus.unsplash.com/premium_photo-1661808770389-30a3ed35b7fe?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mzd8fGFncmljdWx0dXJlJTIwZmllbGR8ZW58MHx8MHx8fDA%3D')" }}>
