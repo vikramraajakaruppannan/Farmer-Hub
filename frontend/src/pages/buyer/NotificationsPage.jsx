@@ -153,7 +153,7 @@ function NotificationsPage() {
                       onClick={() => handleMarkCompleted(notification.request_id)}
                       disabled={markCompletedMutation.isLoading}
                     >
-                      {markCompletedMutation.isLoading ? 'Marking...' : 'Mark as Completed'}
+                      {markCompletedMutation.isLoading ? 'Marking...' : 'Mark as Accepted'}
                     </Button>
                     <Button
                       variant="outline"

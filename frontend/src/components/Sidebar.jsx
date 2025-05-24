@@ -76,7 +76,7 @@ const Sidebar = () => {
     { to: '/market-home', label: 'Market & Sales', icon: ShoppingBasket },
     { to: '/expert-consultation', label: 'Expert Connect', icon: Phone },
     { to: '/farmer-requests', label: 'Farmer Community', icon: Users },
-    { to: '/investments', label: 'Investments & Loans', icon: BanknoteIcon },
+    { to: '/investments', label: 'Investments', icon: BanknoteIcon },
   ];
 
   return (

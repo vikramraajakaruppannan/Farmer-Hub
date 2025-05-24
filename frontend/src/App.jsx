@@ -46,6 +46,13 @@ import AddProductPage from "./pages/buyer/AddProductPage.jsx";
 import ProductDetailPage from "./pages/buyer/ProductDetailPage.jsx";
 import NotificationsPage from "./pages/buyer/NotificationsPage.jsx";
 
+import Index2 from "./pages/investor/Index";
+import InvestorDashboard from "./pages/investor/InvestorDashboard"
+import Properties from "./pages/investor/Properties"
+import ReviewDetail from "./pages/investor/ReviewDetail"
+import UserProfile from "./components/investor/UserProfile.jsx"
+import DocumentReview from "./pages/investor/DocumentReview"
+
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ element }) => {
@@ -103,7 +110,13 @@ const App = () => (
               <Route path="/expert/approve-decline/:token" element={<ExpertApproveDecline />} />
 
               {/* Investor Routes */}
-              <Route path="/invest" element={<Invest />} />
+              <Route path="/invest" element={<Index2 />} />
+              <Route path="/investor-dashboard" element={<InvestorDashboard />} />
+              <Route path="/properties" element={<Properties/>} />
+              <Route path="/review-detail" element={<ReviewDetail />} />
+              <Route path="/user-profile" element={<UserProfile />} />
+              <Route path="/document-review" element={<DocumentReview/>} />
+
 
               {/* Farmer to Bulkbuyer */}
               <Route path="/farmer-requests" element={<Index1 />} />
