@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
@@ -20,9 +21,12 @@ const Login = () => {
     if (location.state?.signupSuccess) {
       setSuccess(location.state.message);
     }
+
+    // Clean up any old sessions on login page
     const sessionId = localStorage.getItem('session_id');
     if (!sessionId) {
       localStorage.removeItem('session_id');
+      localStorage.removeItem('admin_session_id');
       localStorage.removeItem('user');
       localStorage.removeItem('user_id');
       sessionStorage.removeItem('user');
@@ -49,7 +53,6 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // Login request
       const response = await fetch('http://localhost:8000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,10 +71,7 @@ const Login = () => {
         role: selectedCategory,
       };
 
-      // Store session_id
-      localStorage.setItem('session_id', data.session_id);
-
-      // Fetch user_id from /user endpoint
+      // Fetch user profile to get user_id
       const userResponse = await fetch('http://localhost:8000/user', {
         method: 'GET',
         headers: {
@@ -88,9 +88,10 @@ const Login = () => {
       if (!userProfile.id) {
         throw new Error('User ID not found in profile');
       }
+
       localStorage.setItem('user_id', userProfile.id);
 
-      // Store user data based on rememberMe
+      // Store user data
       if (rememberMe) {
         localStorage.setItem('user', JSON.stringify(userData));
       } else {
@@ -102,9 +103,26 @@ const Login = () => {
         description: `Welcome back, ${userData.name}!`,
       });
 
-      // Redirect based on category
-      const redirectPath = selectedCategory === 'Farmer' ? '/dashboard' : '/invest';
-      navigate(redirectPath, { replace: true });
+      // === SESSION SEPARATION LOGIC ===
+      if (data.email === "admin@gmail.com") {
+        // ADMIN: Use separate session key
+        localStorage.setItem('admin_session_id', data.session_id);
+        localStorage.removeItem('session_id'); // Remove normal session
+        navigate("/admin", { replace: true });
+      } else {
+        // NORMAL USER: Use standard session
+        localStorage.setItem('session_id', data.session_id);
+        localStorage.removeItem('admin_session_id'); // Remove admin session if exists
+        if (selectedCategory === 'Farmer') {
+          navigate('/dashboard', { replace: true });
+        } else if (selectedCategory === 'Investor') {
+          navigate('/invest', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      }
+
+      // Prevent back button
       window.history.pushState(null, null, window.location.href);
       window.onpopstate = () => {
         window.history.pushState(null, null, window.location.href);
@@ -184,9 +202,9 @@ const Login = () => {
                   disabled={isLoading}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
+                    <EyeOff className="h-5 h-5" />
                   ) : (
-                    <Eye className="h-5 w-5" />
+                    <Eye className="h-5 h-5" />
                   )}
                 </button>
               </div>

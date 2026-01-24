@@ -24,7 +24,6 @@ import ScanResults from "./pages/module1/ScanResults";
 import Feedback from "./pages/module1/Feedback";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import Invest from "./pages/Invest";
 import MarketHome from "./pages/module2/MarketHome";
 import Market from "./pages/module2/Market";
 import ProductDetails from "./pages/module2/ProductDetails";
@@ -47,11 +46,19 @@ import ProductDetailPage from "./pages/buyer/ProductDetailPage.jsx";
 import NotificationsPage from "./pages/buyer/NotificationsPage.jsx";
 
 import Index2 from "./pages/investor/Index";
-import InvestorDashboard from "./pages/investor/InvestorDashboard"
 import Properties from "./pages/investor/Properties"
-import ReviewDetail from "./pages/investor/ReviewDetail"
-import UserProfile from "./components/investor/UserProfile.jsx"
 import DocumentReview from "./pages/investor/DocumentReview"
+
+import InvestorProperties from "./pages/investment/InvestorProperties";
+import PropertyDetails from "./pages/investment/PropertyDetails";
+import PropertyDetailsForm from "./pages/investment/apply/PropertyDetailsForm";
+import FarmingPlanForm from "./pages/investment/apply/FarmingPlanForm";
+import FinancialInfoForm from "./pages/investment/apply/FinancialInfoForm";
+import DocumentsUploadForm from "./pages/investment/apply/DocumentsUploadForm";
+import ReviewForm from "./pages/investment/apply/ReviewForm";
+import SuccessPage from "./pages/investment/apply/SuccessPage";
+
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 const queryClient = new QueryClient();
 
@@ -109,13 +116,23 @@ const App = () => (
               <Route path="/consultation-request/:requestId" element={<ExpertRequestAction />} />
               <Route path="/expert/approve-decline/:token" element={<ExpertApproveDecline />} />
 
+              {/* Admin for investor */}
+              <Route path="/admin" element={<AdminDashboard />} />
+              
               {/* Investor Routes */}
               <Route path="/invest" element={<Index2 />} />
-              <Route path="/investor-dashboard" element={<InvestorDashboard />} />
               <Route path="/properties" element={<Properties/>} />
-              <Route path="/review-detail" element={<ReviewDetail />} />
-              <Route path="/user-profile" element={<UserProfile />} />
-              <Route path="/document-review" element={<DocumentReview/>} />
+              <Route path="/document-review" element={<DocumentReview/>} /> 
+
+              {/* Investment Routes */}
+              <Route path="/investment" element={<InvestorProperties />} />
+              <Route path="/investment/property/:id" element={<PropertyDetails />} />
+              <Route path="/investment/apply/property-details" element={<PropertyDetailsForm />} />
+              <Route path="/investment/apply/farming-plan" element={<FarmingPlanForm />} />
+              <Route path="/investment/apply/financial-info" element={<FinancialInfoForm />} />
+              <Route path="/investment/apply/documents" element={<DocumentsUploadForm />} />
+              <Route path="/investment/apply/review" element={<ReviewForm />} />
+              <Route path="/investment/apply/success" element={<SuccessPage />} />
 
 
               {/* Farmer to Bulkbuyer */}

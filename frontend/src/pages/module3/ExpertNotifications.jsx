@@ -1,9 +1,12 @@
+// src/pages/FarmerNotifications.jsx
 import React, { useState, useEffect } from 'react';
 import { Bell, ArrowLeft } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import NotificationCard from '@/components/expert/NotificationCard';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const ExpertNotifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -20,116 +23,112 @@ const ExpertNotifications = () => {
         setSuccess(null);
         const sessionId = localStorage.getItem('session_id');
         if (!sessionId) {
-          setError('No session ID found. Please log in.');
+          setError('No session found. Please log in.');
           navigate('/login');
           return;
         }
-        const response = await fetch('http://localhost:8000/notifications', {
-          headers: {
-            'X-Session-ID': sessionId,
-          },
+
+        const response = await fetch(`${API_BASE}/notifications`, {
+          headers: { 'X-Session-ID': sessionId },
         });
-        console.log('Response Status:', response.status);
-        const responseText = await response.text();
-        console.log('Response Body:', responseText);
+
         if (response.status === 401) {
           localStorage.removeItem('session_id');
           setError('Session expired. Please log in again.');
           navigate('/login');
           return;
         }
+
         if (!response.ok) {
-          throw new Error(`Failed to fetch notifications: ${response.status} ${responseText}`);
+          const text = await response.text();
+          throw new Error(`Failed to fetch: ${response.status} ${text}`);
         }
-        const data = JSON.parse(responseText);
-        console.log('Parsed Data:', data);
+
+        const data = await response.json();
         setNotifications(data);
       } catch (err) {
-        console.error('Fetch Error:', err);
-        setError(`Error: ${err.message}`);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
+
     fetchNotifications();
   }, [navigate]);
 
-  useEffect(() => {
-    console.log('Notifications State Updated:', notifications);
-  }, [notifications]);
-
   const handleFeedbackSubmit = async (id, feedback) => {
-    if (!feedback.rating) {
-      setError('Please provide a rating (1-5).');
+    if (!feedback.rating || feedback.rating < 1 || feedback.rating > 5) {
+      setError('Rating must be 1–5.');
       return;
     }
+
     try {
       setError(null);
       setSuccess(null);
-      const response = await fetch(`http://localhost:8000/notifications/${id}/feedback`, {
+      const sessionId = localStorage.getItem('session_id');
+      const response = await fetch(`${API_BASE}/notifications/${id}/feedback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-ID': localStorage.getItem('session_id'),
+          'X-Session-ID': sessionId,
         },
         body: JSON.stringify({
           rating: parseInt(feedback.rating),
           comment: feedback.comment || '',
         }),
       });
-      console.log('Feedback Submission Status:', response.status);
-      const responseText = await response.text();
-      console.log('Feedback Submission Body:', responseText);
+
       if (response.status === 401) {
         localStorage.removeItem('session_id');
-        setError('Session expired. Please log in again.');
+        setError('Session expired.');
         navigate('/login');
         return;
       }
-      if (!response.ok) {
-        throw new Error('Failed to submit feedback');
-      }
+
+      if (!response.ok) throw new Error('Failed to submit feedback');
+
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === id
-            ? { ...n, feedback: { rating: parseInt(feedback.rating), comment: feedback.comment || '' }, status: 'feedbackProvided' }
+            ? {
+                ...n,
+                status: 'feedbackProvided',
+                feedback: { rating: parseInt(feedback.rating), comment: feedback.comment || '' },
+              }
             : n
         )
       );
-      setSuccess('Feedback submitted successfully!');
+      setSuccess('Thank you! Feedback submitted.');
     } catch (err) {
-      console.error('Feedback Error:', err);
-      setError(`Error: ${err.message}`);
+      setError(err.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this notification?')) {
-      try {
-        setError(null);
-        setSuccess(null);
-        const response = await fetch(`http://localhost:8000/notifications/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'X-Session-ID': localStorage.getItem('session_id'),
-          },
-        });
-        console.log('Delete Notification Status:', response.status);
-        if (response.status === 401) {
-          localStorage.removeItem('session_id');
-          setError('Session expired. Please log in again.');
-          navigate('/login');
-          return;
-        }
-        if (!response.ok) {
-          throw new Error('Failed to delete notification');
-        }
-        setNotifications((prev) => prev.filter((n) => n.id !== id));
-        setSuccess('Notification deleted successfully!');
-      } catch (err) {
-        console.error('Delete Error:', err);
-        setError(`Error: ${err.message}`);
+    if (!window.confirm('Delete this notification?')) return;
+
+    try {
+      setError(null);
+      setSuccess(null);
+      const sessionId = localStorage.getItem('session_id');
+      const response = await fetch(`${API_BASE}/notifications/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Session-ID': sessionId },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('session_id');
+        setError('Session expired.');
+        navigate('/login');
+        return;
       }
+
+      if (!response.ok) throw new Error('Failed to delete');
+
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setSuccess('Notification deleted.');
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -137,7 +136,6 @@ const ExpertNotifications = () => {
     <div className="flex min-h-screen bg-gradient-to-b from-green-50 to-green-100">
       <Sidebar />
       <div className="flex-1 p-4 sm:p-6">
-        {/* Sticky Header with Back Button */}
         <div className="sticky top-0 z-10 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg shadow-lg p-4 mb-8">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -145,58 +143,54 @@ const ExpertNotifications = () => {
                 onClick={() => navigate(-1)}
                 variant="ghost"
                 className="text-white hover:bg-green-800 p-2 rounded-full"
-                aria-label="Go back"
               >
                 <ArrowLeft className="h-6 w-6" />
               </Button>
               <Bell className="h-8 w-8" />
-              <h1 className="text-2xl sm:text-3xl font-bold">Expert Request Notifications</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold">My Appointment Notifications</h1>
             </div>
           </div>
-          <p className="mt-2 text-sm opacity-90">View and manage your appointment requests</p>
+          <p className="mt-2 text-sm opacity-90">Track your expert consultation requests</p>
         </div>
 
-        {/* Loading, Error, and Success States */}
         {loading && (
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-600"></div>
-            <p className="ml-2 text-gray-600">Loading notifications...</p>
+            <p className="ml-2 text-gray-600">Loading...</p>
           </div>
         )}
+
         {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6" role="alert">
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6">
             <p>{error}</p>
           </div>
         )}
+
         {success && (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-6" role="alert">
+          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-6">
             <p>{success}</p>
           </div>
         )}
+
         {!loading && !error && notifications.length === 0 && (
-          <p className="text-gray-600 text-center py-8">No notifications found.</p>
+          <p className="text-gray-600 text-center py-8">No notifications yet.</p>
         )}
 
-        {/* Notifications List */}
         <div className="max-w-4xl mx-auto">
           {notifications
             .filter((n) => n.type === 'appointment')
-            .map((notification, index) => (
-              <div
-                key={notification.id}
-                className="animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
+            .map((n, i) => (
+              <div key={n.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-fade-in">
                 <NotificationCard
                   notification={{
-                    ...notification,
-                    farmerName: notification.farmerName || 'N/A',
-                    description: notification.description || 'N/A',
-                    status: notification.status || 'N/A',
-                    expertName: notification.expertName || 'N/A',
-                    expertEmail: notification.expertEmail || 'N/A',
-                    expertPhone: notification.expertPhone || 'N/A',
-                    declineReason: notification.declineReason || null,
+                    ...n,
+                    farmerName: n.farmerName ?? '—',
+                    description: n.description ?? '—',
+                    status: n.status ?? '—',
+                    expertName: n.expertName ?? '—',
+                    expertEmail: n.expertEmail ?? null,
+                    expertPhone: n.expertPhone ?? null,
+                    declineReason: n.declineReason ?? null,
                   }}
                   onFeedbackSubmit={handleFeedbackSubmit}
                   onDelete={handleDelete}
