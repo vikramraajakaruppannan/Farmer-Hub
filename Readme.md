@@ -19,29 +19,45 @@ Encourages sustainable and precision agriculture, contributing to long-term envi
 Strengthens economic stability for farmers by improving productivity, profitability, and market reach.
 
 DASHBOARD:
+
 <img width="1600" height="765" alt="image" src="https://github.com/user-attachments/assets/41df1d55-7192-4295-b62b-999c66370310" />
 
 MODULE 1 - AI DISEASES PREDICTION:
 (PAGE 1)
+
 <img width="1600" height="766" alt="image" src="https://github.com/user-attachments/assets/658679cd-ec58-4556-a38c-ac30650b4220" />
+
 (PAGE 2)
+
 <img width="1600" height="762" alt="image" src="https://github.com/user-attachments/assets/76fdd3ac-14bf-438d-9273-5186bd1217ff" />
 
 MODULE 2 - FARMER TO FARMER CONNECT:
 (PAGE 1)
+
 <img width="1600" height="761" alt="image" src="https://github.com/user-attachments/assets/24eeda61-1a74-41df-a4aa-ccfde4657c04" />
+
 (PAGE 2)
+
 <img width="1600" height="766" alt="image" src="https://github.com/user-attachments/assets/c0aa818d-cc27-4124-95d4-bb9c64d68e33" />
 
 MODULE 3 - EXPERT TO FARMER CONNECT:
 (PAGE 1)
+
 <img width="1600" height="767" alt="image" src="https://github.com/user-attachments/assets/c1052dbf-9505-4b08-9ce5-5668a2b54059" />
+
 (PAGE 2)
+
 <img width="1600" height="769" alt="image" src="https://github.com/user-attachments/assets/1e90ce89-54e3-44e0-8702-ae64572f98f6" />
+
+MODULE 3 - FARMERS TO BULK BUYERS
+
+(PAGE1)
+
+
 ABSTRACT:
 Modern agriculture continues to face significant challenges such as crop diseases, inefficient resource utilization, lack of timely expert guidance, and limited access to transparent markets. Traditional farming practices and isolated digital solutions often fail to provide integrated decision support for farmers. This paper presents an AI-powered smart agriculture platform that combines early crop disease detection, real-time environmental analytics, expert advisory services, farmer collaboration, direct farmer-to-buyer market access, and investor–farmer land leasing within a unified system. Convolutional Neural Networks are employed to identify crop diseases from leaf images at early stages, while data analytics support informed decision-making and market forecasting. The platform is developed using React.js, FastAPI, and Supabase, ensuring scalability, security, and real-time data handling. Experimental results demonstrate improved disease detection accuracy, faster advisory response, enhanced collaboration, and increased market transparency. The proposed system offers a comprehensive, sustainable, and scalable solution for precision farming and modern agricultural ecosystems.
  
 
 
-MODULE 4 - FARMER TO BULK BUYERS
+
 
