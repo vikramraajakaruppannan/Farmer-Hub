@@ -474,7 +474,7 @@ const InvestorProperties = () => {
 
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[2px] text-green-600">Karnataka Farmland Marketplace</p>
+              <p className="text-xs font-semibold uppercase tracking-[2px] text-green-600">Farmland Marketplace</p>
               <h1 className="text-4xl font-bold text-gray-900 mt-1">Available Agricultural Lands</h1>
               <p className="text-gray-500 mt-2">Verified & ready-to-lease farmland across Karnataka</p>
             </div>

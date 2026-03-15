@@ -22,11 +22,12 @@ class PropertyResponse(BaseModel):
     boundaries: Optional[str] = ""
     document_urls: List[str] = []
     status: str
+    is_leased: bool = False
     created_at: str
     updated_at: str
 
 # ────────────────────────────────────────────────────────────────
-# Helper: Upload file (unchanged)
+# Helper: Upload file
 # ────────────────────────────────────────────────────────────────
 async def upload_file(file: UploadFile, farmer_id: str, app_id: str, prefix: str) -> Optional[str]:
     if not file or not file.filename:
@@ -43,40 +44,63 @@ async def upload_file(file: UploadFile, farmer_id: str, app_id: str, prefix: str
         return None
 
 # ────────────────────────────────────────────────────────────────
-# Public: List verified properties (unchanged)
+# Public: List verified properties (hides leased ones)
 # ────────────────────────────────────────────────────────────────
 @router.get("/verified-properties")
 async def get_verified_properties(session: dict = Depends(get_current_session)):
     farmer_id = session["user_id"]
 
     try:
-        # Fetch all verified properties
-        response = supabase.table("properties")\
-            .select("*")\
-            .eq("status", "verified")\
-            .order("created_at", desc=True)\
+        # Fetch verified properties (exclude leased)
+        prop_response = supabase.table("properties") \
+            .select("*") \
+            .eq("status", "verified") \
+            .eq("is_leased", False) \
+            .order("created_at", desc=True) \
             .execute()
 
-        properties = response.data or []
+        if not prop_response or not hasattr(prop_response, 'data'):
+            raise HTTPException(500, "Failed to fetch properties from database")
 
-        # Add has_applied for each property
+        properties = prop_response.data or []
+
+        # For each property, check if farmer applied (safe handling)
         for prop in properties:
-            existing = supabase.table("lease_applications")\
-                .select("id, status")\
-                .eq("property_id", prop["id"])\
-                .eq("farmer_id", farmer_id)\
-                .execute()
+            try:
+                existing_response = supabase.table("lease_applications") \
+                    .select("id, status, investor_status") \
+                    .eq("property_id", prop["id"]) \
+                    .eq("farmer_id", farmer_id) \
+                    .maybe_single() \
+                    .execute()
 
-            has_applied = bool(existing.data)
-            prop["has_applied"] = has_applied
+                # Defensive check
+                if existing_response is None or not hasattr(existing_response, 'data'):
+                    prop["has_applied"] = False
+                    prop["application_id"] = None
+                    prop["application_status"] = None
+                    prop["investor_status"] = None
+                    continue
 
-            if has_applied:
-                application = existing.data[0]   # first row
-                prop["application_id"] = application["id"]
-                prop["application_status"] = application["status"]
-            else:
+                existing = existing_response.data
+
+                prop["has_applied"] = existing is not None
+
+                if prop["has_applied"]:
+                    prop["application_id"] = existing["id"]
+                    prop["application_status"] = existing["status"]
+                    prop["investor_status"] = existing.get("investor_status")
+                else:
+                    prop["application_id"] = None
+                    prop["application_status"] = None
+                    prop["investor_status"] = None
+
+            except Exception as sub_e:
+                print(f"Error checking application for property {prop['id']}: {sub_e}")
+                prop["has_applied"] = False
                 prop["application_id"] = None
                 prop["application_status"] = None
+                prop["investor_status"] = None
 
         return properties
 
@@ -84,44 +108,69 @@ async def get_verified_properties(session: dict = Depends(get_current_session)):
         print(f"Error in /verified-properties: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to load properties: {str(e)}")
 
-@router.get("/property/{property_id}", response_model=PropertyResponse)
-async def get_verified_property_detail(
-    property_id: str,
-    session: dict = Depends(get_current_session)
-):
+# ────────────────────────────────────────────────────────────────
+# GET SINGLE VERIFIED PROPERTY DETAIL
+# ────────────────────────────────────────────────────────────────
+@router.get("/property/{property_id}")
+async def get_verified_property_detail(property_id: str, session: dict = Depends(get_current_session)):
     farmer_id = session["user_id"]
 
-    # Get property
-    prop_response = supabase.table("properties")\
-        .select("*")\
-        .eq("id", property_id)\
-        .eq("status", "verified")\
-        .single()\
+    # Fetch property
+    prop_response = supabase.table("properties") \
+        .select("*") \
+        .eq("id", property_id) \
+        .eq("status", "verified") \
+        .single() \
         .execute()
-    
-    if not prop_response.data:
+
+    if not prop_response or not hasattr(prop_response, "data") or not prop_response.data:
         raise HTTPException(404, "Property not found or not verified")
-    
+
     property_data = prop_response.data
 
-    # Check if this farmer already applied
-    existing_app = supabase.table("lease_applications")\
-        .select("id, status")\
-        .eq("property_id", property_id)\
-        .eq("farmer_id", farmer_id)\
-        .execute()
-    
-    has_applied = bool(existing_app.data)
-    current_app_status = existing_app.data[0]["status"] if existing_app.data else None
+    # Check if farmer already applied (safe handling)
+    try:
+        existing_response = supabase.table("lease_applications") \
+            .select("id, status, investor_status") \
+            .eq("property_id", property_id) \
+            .eq("farmer_id", farmer_id) \
+            .maybe_single() \
+            .execute()
 
-    # Add these fields to the response
-    property_data["has_applied"] = has_applied
-    property_data["application_status"] = current_app_status
+        # Defensive: handle None or failed response
+        if existing_response is None or not hasattr(existing_response, "data"):
+            property_data["has_applied"] = False
+            property_data["application_id"] = None
+            property_data["application_status"] = None
+            property_data["investor_status"] = None
+            property_data["can_reapply"] = True
+        else:
+            existing = existing_response.data
+            property_data["has_applied"] = existing is not None
+
+            if property_data["has_applied"]:
+                property_data["application_id"] = existing["id"]
+                property_data["application_status"] = existing["status"]
+                property_data["investor_status"] = existing.get("investor_status", None)
+                property_data["can_reapply"] = existing.get("investor_status") != "rejected"
+            else:
+                property_data["application_id"] = None
+                property_data["application_status"] = None
+                property_data["investor_status"] = None
+                property_data["can_reapply"] = True
+
+    except Exception as sub_error:
+        print(f"Sub-query error in property detail {property_id}: {sub_error}")
+        # Fallback: treat as not applied
+        property_data["has_applied"] = False
+        property_data["application_id"] = None
+        property_data["application_status"] = None
+        property_data["investor_status"] = None
+        property_data["can_reapply"] = True
 
     return property_data
-
 # ────────────────────────────────────────────────────────────────
-# Farmer: Submit lease application (unchanged)
+# Farmer: Submit lease application (with investor rejection block)
 # ────────────────────────────────────────────────────────────────
 @router.post("/lease-applications")
 async def submit_lease_application(
@@ -147,9 +196,21 @@ async def submit_lease_application(
 ):
     farmer_id = session["user_id"]
 
-    prop = supabase.table("properties").select("id,status").eq("id", property_id).single().execute()
-    if not prop.data or prop.data["status"] != "verified":
-        raise HTTPException(400, "Invalid or unverified property")
+    prop = supabase.table("properties").select("id,status,is_leased").eq("id", property_id).single().execute()
+    if not prop.data or prop.data["status"] != "verified" or prop.data["is_leased"]:
+        raise HTTPException(400, "Property not available or not verified")
+
+    # Block if investor previously rejected any application for this property
+    rejected = supabase.table("lease_applications")\
+        .select("id")\
+        .eq("property_id", property_id)\
+        .eq("farmer_id", farmer_id)\
+        .eq("investor_status", "rejected")\
+        .limit(1)\
+        .execute()
+
+    if rejected.data:
+        raise HTTPException(403, "You cannot apply - investor previously rejected an application for this property.")
 
     application_id = str(uuid.uuid4())
 
@@ -184,6 +245,7 @@ async def submit_lease_application(
         "bank_statement_url": bank_statement_url,
         "additional_docs_url": additional_urls,
         "status": "pending",
+        "investor_status": "pending",  # ← Both start as pending
         "created_at": datetime.utcnow().isoformat(),
         "updated_at": datetime.utcnow().isoformat()
     }
@@ -195,58 +257,36 @@ async def submit_lease_application(
         print(f"Insert failed: {e}")
         raise HTTPException(500, "Failed to submit application")
 
-
-
 # ────────────────────────────────────────────────────────────────
-# ADMIN: Get pending lease applications
+# ADMIN: Get all lease applications (with investor_status)
 # ────────────────────────────────────────────────────────────────
 async def require_admin(session: dict = Depends(get_current_session)):
     user_id = session["user_id"]
-    
     try:
-        profile_response = supabase.table("profiles")\
-            .select("email")\
-            .eq("id", user_id)\
-            .single()\
-            .execute()
-        
-        if not profile_response.data:
-            raise HTTPException(status_code=403, detail="Profile not found")
-        
-        profile_email = profile_response.data["email"]
-        
-        if profile_email != "admin@farmerhub.com":
-            raise HTTPException(status_code=403, detail="Admin access required")
-            
+        profile = supabase.table("profiles").select("email").eq("id", user_id).single().execute().data
+        if not profile or profile["email"] != "admin@farmerhub.com":
+            raise HTTPException(403, "Admin access required")
         return session
     except Exception as e:
-        print("Admin check error:", str(e))
-        raise HTTPException(status_code=403, detail="Invalid session or access denied")
+        raise HTTPException(403, "Invalid session or access denied")
 
 @router.get("/admin/lease-applications")
 async def get_admin_lease_applications(admin_session: dict = Depends(require_admin)):
     try:
         response = supabase.table("lease_applications")\
             .select("""
-                *,
-                profiles!farmer_id (
-                    first_name,
-                    mobile,
-                    email
-                ),
-                properties (
-                    title,
-                    location,
-                    district
-                )
+                id, proposed_rent, lease_duration_years, start_date, status, investor_status, rejected_reason,
+                created_at, updated_at, message_to_owner,
+                id_proof_url, income_proof_url, bank_statement_url, additional_docs_url,
+                profiles!farmer_id (first_name, mobile, email),
+                properties (title, location, district)
             """)\
             .order("created_at", desc=True)\
             .execute()
-
         return response.data or []
     except Exception as e:
         print(f"Error fetching admin lease applications: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to load applications")
+        raise HTTPException(500, "Failed to load applications")
 
 # ────────────────────────────────────────────────────────────────
 # ADMIN: Update application status (Approve / Reject)
@@ -261,14 +301,10 @@ async def update_application_status(
     body: ApplicationStatusUpdate,
     admin_session: dict = Depends(require_admin)
 ):
-    # Define allowed statuses EXACTLY as in your CHECK constraint
-    VALID_STATUSES = ["pending", "approved", "rejected"]   # ← CHANGE THIS if your DB uses 'Approved'
+    VALID_STATUSES = ["pending", "approved", "rejected"]
 
     if body.status not in VALID_STATUSES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid status value. Allowed: {', '.join(VALID_STATUSES)}"
-        )
+        raise HTTPException(400, f"Invalid status. Allowed: {', '.join(VALID_STATUSES)}")
 
     update_data = {
         "status": body.status,
@@ -284,17 +320,29 @@ async def update_application_status(
             .execute()
         
         if response.count == 0:
-            raise HTTPException(404, "Application not found or not authorized")
+            raise HTTPException(404, "Application not found")
+
+        # If admin approves → check if investor also approved → mark property leased
+        if body.status == "approved":
+            app = supabase.table("lease_applications")\
+                .select("investor_status, property_id")\
+                .eq("id", application_id)\
+                .single()\
+                .execute()
             
-        return {"message": f"Application {body.status}"}
+            if app.data and app.data["investor_status"] == "approved":
+                supabase.table("properties")\
+                    .update({"is_leased": True})\
+                    .eq("id", app.data["property_id"])\
+                    .execute()
+
+        return {"message": f"Application updated to {body.status}"}
     except Exception as e:
         print("Status update error:", str(e))
-        if "violates check constraint" in str(e):
-            raise HTTPException(400, "Invalid status value - does not match database constraint")
         raise HTTPException(500, "Failed to update application status")
 
 # ────────────────────────────────────────────────────────────────
-# INVESTOR: See approved lease requests on their property
+# INVESTOR: See fully approved lease requests on their property
 # ────────────────────────────────────────────────────────────────
 @router.get("/properties/{property_id}/approved-requests")
 async def get_approved_lease_requests(
@@ -303,7 +351,6 @@ async def get_approved_lease_requests(
 ):
     user_id = session["user_id"]
 
-    # Verify property ownership
     prop = supabase.table("properties").select("owner_id").eq("id", property_id).single().execute()
     if not prop.data or prop.data["owner_id"] != user_id:
         raise HTTPException(403, "You do not own this property")
@@ -311,16 +358,19 @@ async def get_approved_lease_requests(
     response = supabase.table("lease_applications")\
         .select("""
             *,
-            profiles!farmer_id(name, phone, email)
+            profiles!farmer_id(first_name, mobile, email)
         """)\
         .eq("property_id", property_id)\
         .eq("status", "approved")\
+        .eq("investor_status", "approved")\
         .order("updated_at", desc=True)\
         .execute()
 
     return response.data or []
 
-# Add this endpoint for farmers to see their own applications
+# ────────────────────────────────────────────────────────────────
+# FARMER: My lease applications
+# ────────────────────────────────────────────────────────────────
 @router.get("/my-lease-applications")
 async def get_my_lease_applications(session: dict = Depends(get_current_session)):
     farmer_id = session["user_id"]
@@ -336,6 +386,9 @@ async def get_my_lease_applications(session: dict = Depends(get_current_session)
     
     return response.data or []
 
+# ────────────────────────────────────────────────────────────────
+# FARMER: Get single application detail
+# ────────────────────────────────────────────────────────────────
 @router.get("/lease-application/{application_id}")
 async def get_lease_application_detail(application_id: str, session: dict = Depends(get_current_session)):
     farmer_id = session["user_id"]
@@ -343,15 +396,19 @@ async def get_lease_application_detail(application_id: str, session: dict = Depe
     response = supabase.table("lease_applications").select("*").eq("id", application_id).single().execute()
     if not response.data:
         raise HTTPException(404, "Application not found")
+    
     application = response.data
     if application["farmer_id"] != farmer_id:
         raise HTTPException(403, "Not authorized")
     
-    # Get property details
     prop_response = supabase.table("properties").select("*").eq("id", application["property_id"]).single().execute()
     application["property"] = prop_response.data
+    
     return application
 
+# ────────────────────────────────────────────────────────────────
+# FARMER: Delete pending application
+# ────────────────────────────────────────────────────────────────
 @router.delete("/lease-application/{application_id}")
 async def delete_lease_application(
     application_id: str,
@@ -359,7 +416,6 @@ async def delete_lease_application(
 ):
     farmer_id = session["user_id"]
 
-    # Fetch to verify ownership & status
     app = supabase.table("lease_applications")\
         .select("farmer_id, status")\
         .eq("id", application_id)\
@@ -375,55 +431,23 @@ async def delete_lease_application(
     if app.data["status"] != "pending":
         raise HTTPException(400, "Only pending applications can be deleted")
 
-    # Optional: clean up storage files
     try:
         supabase.storage.from_("documents").remove([f"lease-apps/{farmer_id}/{application_id}/"])
     except:
         pass
 
-    # Delete row
     supabase.table("lease_applications").delete().eq("id", application_id).execute()
-
     return {"message": "Application deleted successfully"}
 
-@router.patch("/admin/lease-applications/{application_id}/investor-reject")
-async def investor_reject_application(
-    application_id: str,
-    session: dict = Depends(get_current_session)
-):
-    # Verify ownership or investor role (add your auth check)
-    app = supabase.table("lease_applications")\
-        .select("property_id")\
-        .eq("id", application_id)\
-        .single()\
-        .execute()
-
-    if not app.data:
-        raise HTTPException(404, "Application not found")
-
-    # Check property ownership if needed
-    prop = supabase.table("properties")\
-        .select("owner_id")\
-        .eq("id", app.data["property_id"])\
-        .single()\
-        .execute()
-
-    if prop.data["owner_id"] != session["user_id"]:
-        raise HTTPException(403, "Not authorized")
-
-    supabase.table("lease_applications")\
-        .update({"investor_rejected": True, "updated_at": datetime.utcnow().isoformat()})\
-        .eq("id", application_id)\
-        .execute()
-
-    return {"message": "Investor rejected application"}
-
+# ────────────────────────────────────────────────────────────────
+# FARMER: Re-apply (reset to pending) - only if not investor-rejected
+# ────────────────────────────────────────────────────────────────
 @router.patch("/lease-applications/{application_id}/reapply")
 async def reapply_application(application_id: str, session: dict = Depends(get_current_session)):
     farmer_id = session["user_id"]
 
     app = supabase.table("lease_applications")\
-        .select("farmer_id, status")\
+        .select("farmer_id, status, investor_status")\
         .eq("id", application_id)\
         .single()\
         .execute()
@@ -431,7 +455,9 @@ async def reapply_application(application_id: str, session: dict = Depends(get_c
     if not app.data or app.data["farmer_id"] != farmer_id:
         raise HTTPException(403, "Not authorized")
 
-    # Reset to pending
+    if app.data["investor_status"] == "rejected":
+        raise HTTPException(403, "Cannot re-apply - investor previously rejected this application")
+
     supabase.table("lease_applications")\
         .update({
             "status": "pending",

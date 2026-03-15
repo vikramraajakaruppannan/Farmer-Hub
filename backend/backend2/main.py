@@ -11,7 +11,7 @@ app = FastAPI(title="AgriTech API")
 # CORRECTED: allow_origins (not allow_origitions)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # Fixed typo
+    allow_origins=["http://localhost:8080", "http://10.190.114.114:8080"],  # Fixed typo
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
