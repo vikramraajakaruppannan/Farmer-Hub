@@ -109,7 +109,14 @@ const Login = () => {
         localStorage.setItem('admin_session_id', data.session_id);
         localStorage.removeItem('session_id'); // Remove normal session
         navigate("/admin", { replace: true });
-      } else {
+      } 
+      else if (data.email === "admin@farmerhub.com") {
+        // INVESTOR: Use normal session but redirect to invest page
+        localStorage.setItem('session_id', data.session_id);
+        localStorage.removeItem('admin_session_id'); // Remove admin session if exists
+        navigate('/admin/dashboard', { replace: true });
+      }
+      else {
         // NORMAL USER: Use standard session
         localStorage.setItem('session_id', data.session_id);
         localStorage.removeItem('admin_session_id'); // Remove admin session if exists

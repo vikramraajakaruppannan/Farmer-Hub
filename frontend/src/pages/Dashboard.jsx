@@ -11,11 +11,8 @@ import {
   Calendar,
   Droplet,
   CloudSun,
-  Bell,
   User,
-  Settings,
   LogOut,
-  Globe,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -23,10 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('English');
-  const [notifications, setNotifications] = useState([]);
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState(null);
@@ -73,39 +68,7 @@ const Dashboard = () => {
       });
       navigate('/login', { replace: true });
     }
-
-    // Load notifications from localStorage with fallback
-    const loadNotifications = () => {
-      const storedNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-      if (storedNotifications.length === 0) {
-        // Fallback to static notifications
-        const defaultNotifications = [
-          { id: 1, message: 'New message from AgriTech Support', status: 'pending', timestamp: '2025-04-12T10:00:00Z' },
-          { id: 2, message: 'Weather alert: Heavy rain expected', status: 'pending', timestamp: '2025-04-12T09:30:00Z' },
-          { id: 3, message: 'Your crop scan is complete', status: 'read', timestamp: '2025-04-11T15:45:00Z' },
-        ];
-        localStorage.setItem('notifications', JSON.stringify(defaultNotifications));
-        setNotifications(defaultNotifications);
-      } else {
-        setNotifications(storedNotifications);
-      }
-    };
-
-    loadNotifications();
-
-    // Poll notifications every 5 seconds
-    const interval = setInterval(loadNotifications, 5000);
-    window.history.pushState(null, null, window.location.href);
-    const handlePopState = () => {
-      window.history.pushState(null, null, window.location.href);
-    };
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [navigate, toast]);
+    }, [navigate, toast]);
 
   // Fetch weather based on location
   useEffect(() => {
@@ -259,28 +222,7 @@ const Dashboard = () => {
     }
   };
 
-  // Handle notification read/unread
-  const markNotificationRead = (id) => {
-    setNotifications((prev) => {
-      const updated = prev.map((notif) =>
-        notif.id === id ? { ...notif, status: 'read' } : notif
-      );
-      localStorage.setItem('notifications', JSON.stringify(updated));
-      return updated;
-    });
-  };
 
-  // Clear all notifications
-  const clearNotifications = () => {
-    localStorage.setItem('notifications', JSON.stringify([]));
-    setNotifications([]);
-    setIsNotificationOpen(false);
-  };
-
-  // Count pending notifications
-  const pendingCount = notifications.filter((notif) => notif.status === 'pending').length;
-
-  
 
   // Handle download with error checking
   const handleDownload = async (fileName) => {
@@ -313,62 +255,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-3 sm:gap-4">
            
 
-            {/* Notification Button */}
-            <div className="relative" ref={notificationRef}>
-              <button
-                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                className="relative p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-agritech-green"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
-                {pendingCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center text-xs text-white">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-              {isNotificationOpen && (
-                <div className="absolute right-0 mt-2 w-64 sm:w-80 bg-white rounded-lg shadow-xl z-10 animate-fade-in">
-                  <div className="p-4 border-b border-gray-200">
-                    <h3 className="text-sm font-semibold text-gray-800">Notifications</h3>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <p className="p-4 text-sm text-gray-500">No notifications</p>
-                    ) : (
-                      notifications.map((notif) => (
-                        <div
-                          key={notif.id}
-                          onClick={() => markNotificationRead(notif.id)}
-                          className={`p-4 border-b border-gray-100 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
-                            notif.status === 'pending' ? 'bg-blue-50' : ''
-                          }`}
-                          role="button"
-                          aria-label={`Mark notification as read: ${notif.message}`}
-                        >
-                          <p className={notif.status === 'pending' ? 'font-medium text-gray-800' : 'text-gray-600'}>
-                            {notif.message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {new Date(notif.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {notifications.length > 0 && (
-                    <button
-                      onClick={clearNotifications}
-                      className="w-full p-3 text-sm text-red-600 hover:bg-gray-100 transition-colors text-center"
-                      aria-label="Clear all notifications"
-                    >
-                      Clear All
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
+            
             {/* User Button */}
             <div className="relative" ref={userMenuRef}>
               <button
@@ -392,15 +279,6 @@ const Dashboard = () => {
                   >
                     <User className="h-4 w-4 mr-2" />
                     Profile
-                  </Link>
-                  <Link
-                    to="/settings"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center p-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    aria-label="Go to settings"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
                   </Link>
                   <button
                     onClick={() => {

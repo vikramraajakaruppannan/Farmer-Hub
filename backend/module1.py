@@ -85,7 +85,7 @@ async def get_prevention_methods(disease_name: str, plant_name: str = "plant"):
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     payload = {
         "messages": [{"role": "user", "content": prompt}],
-        "model": "llama3-70b-8192",
+        "model": "llama-3.3-70b-versatile",
         "temperature": 0.7,
         "max_tokens": 400  # Increased to ensure complete output
     }

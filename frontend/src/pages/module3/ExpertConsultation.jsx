@@ -83,7 +83,7 @@ const ExpertConsultation = () => {
               <h1 className="text-2xl sm:text-3xl font-bold">Consult an Expert</h1>
             </div>
             <button
-          onClick={() => navigate('/farmer-notifications')}
+          onClick={() => navigate('/expert-notifications')}
           className="bg-white text-green-700 px-4 py-2 rounded-md font-semibold hover:bg-green-100"
         >
           My Requests

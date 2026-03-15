@@ -1,117 +1,75 @@
+// src/pages/investment/PropertyDetailsForm.jsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from "../../../components/ui/Card";
-import { Button } from "../../../components/ui/Button";
-import { Input } from "../../../components/ui/Input";
-
-const ApplicationProgress = ({ currentStep }) => {
-  const steps = ['Property Details', 'Farming Plan', 'Financial Info', 'Documents', 'Review'];
-  
-  return (
-    <div className="mb-6">
-      <div className="flex justify-between mb-2">
-        {steps.map((step, index) => (
-          <div key={index} className={`flex-1 text-center ${
-            index < currentStep ? 'text-green-600' : 
-            index === currentStep ? 'text-blue-600' : 'text-gray-400'
-          }`}>
-            <div className="text-xs">{step}</div>
-          </div>
-        ))}
-      </div>
-      <div className="flex mb-4">
-        {steps.map((_, index) => (
-          <div key={index} className="flex-1">
-            <div className={`h-2 ${
-              index < currentStep ? 'bg-green-500' :
-              index === currentStep ? 'bg-blue-500' : 'bg-gray-200'
-            }`}></div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import ApplicationProgress from '../apply/ApplicationProgress';
 
 const PropertyDetailsForm = () => {
   const navigate = useNavigate();
-  
-  const handleNext = () => {
-    navigate('/investment/apply/farming-plan');
+  const location = useLocation();
+
+  const property = location.state?.property || {
+    title: "Unknown Land",
+    location: "N/A",
+    price: "N/A",
+    area: "N/A",
+    district: "N/A"
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-100 to-green-200 p-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-6 text-center text-green-800">Investment Application</h1>
-        <ApplicationProgress currentStep={0} />
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 p-6">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold text-green-900 mb-8 text-center">Lease Application</h1>
         
-        <Card className="p-6 shadow-lg border border-green-100 bg-white/90">
-          <h2 className="text-xl font-medium mb-6">Property Information</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Property Name
-              </label>
-              <Input 
-                type="text" 
-                value="Premium Farmland" 
-                readOnly 
-                className="bg-gray-50"
-              />
+        <ApplicationProgress currentStep={0} />
+
+        <Card className="p-8 shadow-xl border-green-100">
+          <h2 className="text-2xl font-semibold text-green-800 mb-8">
+            Step 1 – Property Details
+          </h2>
+
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Property Name</label>
+                <Input value={property.title} readOnly className="bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <Input value={property.location} readOnly className="bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">District</label>
+                <Input value={property.district || "N/A"} readOnly className="bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
+                <Input value={`${property.area} acres`} readOnly className="bg-gray-50" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rent per acre / year</label>
+                <Input value={`₹${property.price?.toLocaleString() || "N/A"}`} readOnly className="bg-gray-50" />
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Location
-              </label>
-              <Input 
-                type="text" 
-                value="North Bangalore" 
-                readOnly 
-                className="bg-gray-50"
-              />
+
+            <div className="pt-8 border-t flex flex-col sm:flex-row gap-4">
+              <Button 
+                variant="outline" 
+                className="flex-1 border-green-600 text-green-700 hover:bg-green-50"
+                onClick={() => navigate(-1)}
+              >
+                ← Back to Property
+              </Button>
+              
+              <Button 
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium"
+                onClick={() => navigate('/investment/apply/farming-plan', { state: { property } })}
+              >
+                Continue to Farming Plan →
+              </Button>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Investment per acre/year
-              </label>
-              <Input 
-                type="text" 
-                value="₹25,000" 
-                readOnly 
-                className="bg-gray-50"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Owner Name
-              </label>
-              <Input 
-                type="text" 
-                value="Priya Sharma" 
-                readOnly 
-                className="bg-gray-50"
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-between mt-8">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/investment/property/1')}
-            >
-              Back
-            </Button>
-            <Button 
-              className="bg-green-500 hover:bg-green-600"
-              onClick={handleNext}
-            >
-              Next
-            </Button>
           </div>
         </Card>
       </div>
@@ -119,5 +77,4 @@ const PropertyDetailsForm = () => {
   );
 };
 
-export { ApplicationProgress };
 export default PropertyDetailsForm;

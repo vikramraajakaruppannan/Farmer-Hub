@@ -1,185 +1,152 @@
+// src/pages/investment/FarmingPlanForm.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from "../../../components/ui/Card";
-import { Button } from "../../../components/ui/Button";
-import { Input } from "../../../components/ui/Input";
-import { ApplicationProgress } from './PropertyDetailsForm';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import ApplicationProgress from '../apply/ApplicationProgress';
 
 const FarmingPlanForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const property = location.state?.property || { title: "Selected Land" };
+
   const [formData, setFormData] = useState({
     leaseDuration: '',
     startDate: '',
-    crops: '',
-    experience: '',
+    plannedCrops: '',
+    farmingExperience: '',
     equipment: '',
-    workers: '',
-    investment: null,
-    investPercentage: ''
+    workers: ''
   });
+
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors({ ...errors, [name]: '' });
   };
 
-  const validateForm = () => {
+  const validate = () => {
     const newErrors = {};
-    if (!formData.leaseDuration) newErrors.leaseDuration = 'Please fill this field';
-    if (!formData.startDate) newErrors.startDate = 'Please fill this field';
-    if (!formData.crops) newErrors.crops = 'Please fill this field';
-    if (!formData.experience) newErrors.experience = 'Please fill this field';
-    if (!formData.equipment) newErrors.equipment = 'Please fill this field';
-    if (!formData.workers) newErrors.workers = 'Please fill this field';
+    if (!formData.leaseDuration) newErrors.leaseDuration = 'Required';
+    if (!formData.startDate) newErrors.startDate = 'Required';
+    if (!formData.plannedCrops) newErrors.plannedCrops = 'Required';
+    if (!formData.farmingExperience) newErrors.farmingExperience = 'Required';
     return newErrors;
   };
 
   const handleNext = () => {
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
       return;
     }
-    navigate('/investment/apply/financial-info');
-  };
-
-  const handleBack = () => {
-    navigate('/investment/apply/property-details');
+    navigate('/investment/apply/financial-info', {
+      state: { property, farmingPlan: formData }
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-100 to-green-200 p-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-6 text-center text-green-800">Investment Application</h1>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 p-6">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold text-green-900 mb-8 text-center">Lease Application</h1>
         <ApplicationProgress currentStep={1} />
-        
-        <Card className="p-6 shadow-lg border border-green-100 bg-white/90">
-          <h2 className="text-xl font-medium mb-6">Farming Plan</h2>
-          <p className="text-gray-600 mb-6">Tell us about your farming plans for this property</p>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Lease Duration (in years)
-                <span className="text-red-500">*</span>
-              </label>
-              <Input 
-                type="number" 
-                name="leaseDuration"
-                value={formData.leaseDuration}
-                onChange={handleChange}
-                required
-              />
-              {errors.leaseDuration && (
-                <p className="text-red-500 text-xs mt-1">{errors.leaseDuration}</p>
-              )}
+
+        <Card className="p-8 shadow-xl border-green-100">
+          <h2 className="text-2xl font-semibold text-green-800 mb-8">
+            Farming Plan for {property.title}
+          </h2>
+
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Lease Duration (years) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  name="leaseDuration"
+                  value={formData.leaseDuration}
+                  onChange={handleChange}
+                  placeholder="e.g. 2"
+                />
+                {errors.leaseDuration && <p className="text-red-500 text-sm mt-1">{errors.leaseDuration}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="date"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleChange}
+                />
+                {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
+              </div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expected Start Date
-                <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium mb-2">
+                Planned Crops <span className="text-red-500">*</span>
               </label>
-              <Input 
-                type="date" 
-                name="startDate"
-                value={formData.startDate}
+              <Input
+                name="plannedCrops"
+                value={formData.plannedCrops}
                 onChange={handleChange}
-                required
+                placeholder="e.g. Paddy, Vegetables, Sugarcane"
               />
-              {errors.startDate && (
-                <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>
-              )}
+              {errors.plannedCrops && <p className="text-red-500 text-sm mt-1">{errors.plannedCrops}</p>}
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Planned Crops
-                <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium mb-2">
+                Farming Experience (years) <span className="text-red-500">*</span>
               </label>
-              <Input 
-                type="text" 
-                name="crops"
-                value={formData.crops}
+              <Input
+                type="number"
+                name="farmingExperience"
+                value={formData.farmingExperience}
                 onChange={handleChange}
-                placeholder="e.g., Rice, Wheat, Vegetables"
-                required
+                placeholder="e.g. 5"
               />
-              {errors.crops && (
-                <p className="text-red-500 text-xs mt-1">{errors.crops}</p>
-              )}
+              {errors.farmingExperience && <p className="text-red-500 text-sm mt-1">{errors.farmingExperience}</p>}
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Farming Experience (in years)
-                <span className="text-red-500">*</span>
-              </label>
-              <Input 
-                type="text" 
-                name="experience"
-                value={formData.experience}
-                onChange={handleChange}
-                required
-              />
-              {errors.experience && (
-                <p className="text-red-500 text-xs mt-1">{errors.experience}</p>
-              )}
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">Equipment Available</label>
+                <Input
+                  name="equipment"
+                  value={formData.equipment}
+                  onChange={handleChange}
+                  placeholder="Tractor, Power tiller, etc."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Number of Workers</label>
+                <Input
+                  type="number"
+                  name="workers"
+                  value={formData.workers}
+                  onChange={handleChange}
+                  placeholder="e.g. 4"
+                />
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Available Equipment
-                <span className="text-red-500">*</span>
-              </label>
-              <Input 
-                type="text" 
-                name="equipment"
-                value={formData.equipment}
-                onChange={handleChange}
-                placeholder="List your farming equipment"
-                required
-              />
-              {errors.equipment && (
-                <p className="text-red-500 text-xs mt-1">{errors.equipment}</p>
-              )}
+
+            <div className="pt-8 flex gap-4">
+              <Button variant="outline" className="flex-1" onClick={() => navigate(-1)}>
+                ← Back
+              </Button>
+              <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={handleNext}>
+                Continue to Financial Information →
+              </Button>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Number of Workers
-                <span className="text-red-500">*</span>
-              </label>
-              <Input 
-                type="number" 
-                name="workers"
-                value={formData.workers}
-                onChange={handleChange}
-                required
-              />
-              {errors.workers && (
-                <p className="text-red-500 text-xs mt-1">{errors.workers}</p>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex justify-between mt-8">
-            <Button 
-              variant="outline" 
-              onClick={handleBack}
-            >
-              Back
-            </Button>
-            <Button 
-              className="bg-green-500 hover:bg-green-600"
-              onClick={handleNext}
-            >
-              Next
-            </Button>
           </div>
         </Card>
       </div>

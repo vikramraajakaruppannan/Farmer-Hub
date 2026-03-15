@@ -114,22 +114,33 @@ async def upload_product_image(file: UploadFile = File(...), session: dict = Dep
         path = f"products/{session['user_id']}/{uuid4()}.{ext}"
         content = await file.read()
 
-        upload = supabase.storage.from_("product-images").upload(
-            path, content, {"content-type": file.content_type}
+        # ────────────────────────────────────────────────
+        # Modern supabase-py v2.x upload handling
+        # ────────────────────────────────────────────────
+        upload_response = supabase.storage.from_("product-images").upload(
+            path=path,
+            file=content,
+            file_options={"content-type": file.content_type}
         )
-        if upload.get("error"):
-            raise HTTPException(status_code=500, detail="Upload failed")
 
+        # Check for error attribute safely
+        if hasattr(upload_response, "error") and upload_response.error is not None:
+            error_msg = upload_response.error.message if hasattr(upload_response.error, "message") else str(upload_response.error)
+            logger.error(f"Supabase storage upload failed: {error_msg}")
+            raise HTTPException(status_code=500, detail=f"Upload failed: {error_msg}")
+
+        # If no error, get public URL
         public_url = supabase.storage.from_("product-images").get_public_url(path)
+
         logger.info(f"Image uploaded by {session['email']}: {public_url}")
         return {"image_url": public_url}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Image upload error for {session['email']}: {str(e)}")
+        logger.error(f"Image upload error for {session.get('email', 'unknown')}: {str(e)}", exc_info=True)
         if "Bucket not found" in str(e):
-            raise HTTPException(status_code=404, detail="Bucket 'product-images' not found")
+            raise HTTPException(status_code=404, detail="Bucket 'product-images' not found. Please create it in Supabase.")
         raise HTTPException(status_code=500, detail=f"Upload error: {str(e)}")
 
 # ------------------------------------------------------------------

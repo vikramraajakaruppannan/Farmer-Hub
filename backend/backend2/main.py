@@ -1,7 +1,7 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, user, misc, disease, marketplace, expert, buyer, investor, investor_properties, admin
+from routes import auth, user, misc, disease, marketplace, expert, buyer, investor, investor_properties, admin, farmer_properties
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -28,8 +28,8 @@ app.include_router(buyer.router)
 app.include_router(investor.router)
 app.include_router(investor_properties.router)
 app.include_router(admin.router)
-
-
+                
+app.include_router(farmer_properties.router) 
 @app.get("/")
 def root():
     return {"message": "AgriTech API Running"}

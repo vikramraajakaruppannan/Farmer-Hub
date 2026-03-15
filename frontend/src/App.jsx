@@ -59,6 +59,9 @@ import ReviewForm from "./pages/investment/apply/ReviewForm";
 import SuccessPage from "./pages/investment/apply/SuccessPage";
 
 import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AppliedDetail from "./pages/investment/AppliedDetail.jsx";
+
+import AdminDashboardFarmer from "./pages/investment/AdminDashboardFarmer.jsx";
 
 const queryClient = new QueryClient();
 
@@ -133,6 +136,8 @@ const App = () => (
               <Route path="/investment/apply/documents" element={<DocumentsUploadForm />} />
               <Route path="/investment/apply/review" element={<ReviewForm />} />
               <Route path="/investment/apply/success" element={<SuccessPage />} />
+              <Route path="/admin/dashboard" element={<AdminDashboardFarmer />} />
+              <Route path="/investment/applied/:id" element={<AppliedDetail />} />
 
 
               {/* Farmer to Bulkbuyer */}
